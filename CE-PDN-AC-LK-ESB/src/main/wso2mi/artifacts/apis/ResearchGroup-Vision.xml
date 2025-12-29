@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api context="/research-groups/v1/vision/" name="ResearchGroup-Vision" xmlns="http://ws.apache.org/ns/synapse">
+    <resource methods="GET" uri-template="/">
+        <inSequence>
+            <call>
+                <endpoint key="rg-computer-vision"/>
+            </call>
+            <datamapper config="resources:datamapper/rg-details-data-mapper/rg-details-data-mapper.dmc" inputSchema="resources:datamapper/rg-details-data-mapper/rg-details-data-mapper_inputSchema.json" outputSchema="resources:datamapper/rg-details-data-mapper/rg-details-data-mapper_outputSchema.json"/>
+            <respond/>
+        </inSequence>
+        <faultSequence>
+        </faultSequence>
+    </resource>
+    <resource methods="GET" uri-template="/publications">
+        <inSequence>
+            <call description="Filter the Publications from the given endpoint">
+                <endpoint key="publications-filter-by-research-group"/>
+            </call>
+            <datamapper config="resources:datamapper/rg-vision-publications-mapper/rg-vision-publications-mapper.dmc" inputSchema="resources:datamapper/rg-vision-publications-mapper/rg-vision-publications-mapper_inputSchema.json" outputSchema="resources:datamapper/rg-vision-publications-mapper/rg-vision-publications-mapper_outputSchema.json"/>
+            <log category="INFO" logMessageID="true" logFullPayload="false">
+                <message></message>
+            </log>
+            <respond/>
+        </inSequence>
+        <faultSequence>
+        </faultSequence>
+    </resource>
+    <resource methods="GET" uri-template="/people">
+        <inSequence>
+        </inSequence>
+        <faultSequence>
+        </faultSequence>
+    </resource>
+</api>

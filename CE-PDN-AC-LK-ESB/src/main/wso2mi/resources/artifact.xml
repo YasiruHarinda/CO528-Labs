@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<artifacts>
+  <artifact name="resources_datamapper_rg-vision-publications-mapper_rg-vision-publications-mapper_dmc" groupId="com.microintegrator.projects" version="1.0.0" type="registry/resource" serverRole="EnterpriseIntegrator">
+    <item>
+      <file>rg-vision-publications-mapper.dmc</file>
+      <path>/_system/governance/mi-resources/datamapper/rg-vision-publications-mapper</path>
+      <mediaType>text/plain</mediaType>
+      <properties></properties>
+    </item>
+  </artifact>
+  <artifact name="resources_datamapper_rg-vision-publications-mapper_rg-vision-publications-mapper_inputSchema_json" groupId="com.microintegrator.projects" version="1.0.0" type="registry/resource" serverRole="EnterpriseIntegrator">
+    <item>
+      <file>rg-vision-publications-mapper_inputSchema.json</file>
+      <path>/_system/governance/mi-resources/datamapper/rg-vision-publications-mapper</path>
+      <mediaType>text/plain</mediaType>
+      <properties></properties>
+    </item>
+  </artifact>
+  <artifact name="resources_datamapper_rg-vision-publications-mapper_rg-vision-publications-mapper_outputSchema_json" groupId="com.microintegrator.projects" version="1.0.0" type="registry/resource" serverRole="EnterpriseIntegrator">
+    <item>
+      <file>rg-vision-publications-mapper_outputSchema.json</file>
+      <path>/_system/governance/mi-resources/datamapper/rg-vision-publications-mapper</path>
+      <mediaType>text/plain</mediaType>
+      <properties></properties>
+    </item>
+  </artifact>
+  <artifact name="resources_datamapper_rg-details-data-mapper_rg-details-data-mapper_dmc" groupId="com.microintegrator.projects" version="1.0.0" type="registry/resource" serverRole="EnterpriseIntegrator">
+    <item>
+      <file>rg-details-data-mapper.dmc</file>
+      <path>/_system/governance/mi-resources/datamapper/rg-details-data-mapper</path>
+      <mediaType>text/plain</mediaType>
+      <properties></properties>
+    </item>
+  </artifact>
+  <artifact name="resources_datamapper_rg-details-data-mapper_rg-details-data-mapper_inputSchema_json" groupId="com.microintegrator.projects" version="1.0.0" type="registry/resource" serverRole="EnterpriseIntegrator">
+    <item>
+      <file>rg-details-data-mapper_inputSchema.json</file>
+      <path>/_system/governance/mi-resources/datamapper/rg-details-data-mapper</path>
+      <mediaType>text/plain</mediaType>
+      <properties></properties>
+    </item>
+  </artifact>
+  <artifact name="resources_datamapper_rg-details-data-mapper_rg-details-data-mapper_outputSchema_json" groupId="com.microintegrator.projects" version="1.0.0" type="registry/resource" serverRole="EnterpriseIntegrator">
+    <item>
+      <file>rg-details-data-mapper_outputSchema.json</file>
+      <path>/_system/governance/mi-resources/datamapper/rg-details-data-mapper</path>
+      <mediaType>text/plain</mediaType>
+      <properties/>
+    </item>
+  </artifact>
+</artifacts>
