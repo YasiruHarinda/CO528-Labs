@@ -17,8 +17,3 @@ paths:
       responses:
         default:
           description: Default response
-  /people:
-    get:
-      responses:
-        default:
-          description: Default response

@@ -25,10 +25,4 @@
         <faultSequence>
         </faultSequence>
     </resource>
-    <resource methods="GET" uri-template="/people">
-        <inSequence>
-        </inSequence>
-        <faultSequence>
-        </faultSequence>
-    </resource>
 </api>
