@@ -1006,18 +1006,76 @@ function toggleAuth(mode){
   document.getElementById('loginForm').style.display = mode==='login'?'block':'none';
   document.getElementById('registerForm').style.display = mode==='register'?'block':'none';
 }
+// async function doLogin(){
+//   const idx = document.getElementById('loginIndex').value.trim();
+//   const pwd = document.getElementById('loginPwd').value.trim();
+//   const role = document.getElementById('loginRole').value;
+
+//   // Basic validation
+//   if(!idx || !pwd){
+//     alert('Please enter your index number and password!');
+//     return;
+//   }
+
+//   // Show loading state
+//   const btn = document.querySelector('#loginForm .btn-primary');
+//   btn.textContent = 'Logging in...';
+//   btn.disabled = true;
+
+//   try {
+//     const resp = await fetch(`${API_BASE}/api/auth/login`, {
+//       method: 'POST',
+//       headers: { 'Content-Type': 'application/json' },
+//       body: JSON.stringify({ 
+//         email: idx + '@ce.pdn.ac.lk',  // convert index to email
+//         password: pwd 
+//       })
+//     });
+
+//     const data = await resp.json();
+
+//     if(!resp.ok){
+//       alert('Login failed: ' + (data.error || 'Invalid credentials'));
+//       btn.textContent = 'Login →';
+//       btn.disabled = false;
+//       return;
+//     }
+
+//     // Save token
+//     localStorage.setItem('decp_token', data.token);
+//     localStorage.setItem('decp_user', JSON.stringify(data.user));
+
+//     currentUser = {
+//       name: data.user.name,
+//       index: data.user.indexNo,
+//       role: data.user.role,
+//       batch: data.user.batch,
+//       avatar: data.user.name.split(' ').map(w=>w[0]).join('').toUpperCase()
+//     };
+
+//     launchApp();
+
+//   } catch(e) {
+//     alert('Cannot connect to server. Check your internet connection.');
+//     btn.textContent = 'Login →';
+//     btn.disabled = false;
+//   }
+// }
 async function doLogin(){
   const idx = document.getElementById('loginIndex').value.trim();
   const pwd = document.getElementById('loginPwd').value.trim();
-  const role = document.getElementById('loginRole').value;
 
-  // Basic validation
   if(!idx || !pwd){
     alert('Please enter your index number and password!');
     return;
   }
 
-  // Show loading state
+  // Build email EXACTLY same way as register
+  // E/20/089 → e20089@eng.pdn.ac.lk
+  const email = idx.replace(/\//g, '').toLowerCase() + '@eng.pdn.ac.lk';
+  
+  console.log('Logging in with email:', email); // check in F12
+
   const btn = document.querySelector('#loginForm .btn-primary');
   btn.textContent = 'Logging in...';
   btn.disabled = true;
@@ -1026,22 +1084,19 @@ async function doLogin(){
     const resp = await fetch(`${API_BASE}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        email: idx + '@ce.pdn.ac.lk',  // convert index to email
-        password: pwd 
-      })
+      body: JSON.stringify({ email, password: pwd })
     });
 
     const data = await resp.json();
+    console.log('Login response:', data);
 
     if(!resp.ok){
-      alert('Login failed: ' + (data.error || 'Invalid credentials'));
+      alert(data.error || 'Login failed');
       btn.textContent = 'Login →';
       btn.disabled = false;
       return;
     }
 
-    // Save token
     localStorage.setItem('decp_token', data.token);
     localStorage.setItem('decp_user', JSON.stringify(data.user));
 
@@ -1056,7 +1111,7 @@ async function doLogin(){
     launchApp();
 
   } catch(e) {
-    alert('Cannot connect to server. Check your internet connection.');
+    alert('Cannot connect to server!');
     btn.textContent = 'Login →';
     btn.disabled = false;
   }
