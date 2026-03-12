@@ -1070,11 +1070,7 @@ async function doLogin(){
     return;
   }
 
-  // Build email EXACTLY same way as register
-  // E/20/089 → e20089@eng.pdn.ac.lk
   const email = idx.replace(/\//g, '').toLowerCase() + '@eng.pdn.ac.lk';
-  
-  console.log('Logging in with email:', email); // check in F12
 
   const btn = document.querySelector('#loginForm .btn-primary');
   btn.textContent = 'Logging in...';
@@ -1088,18 +1084,19 @@ async function doLogin(){
     });
 
     const data = await resp.json();
-    console.log('Login response:', data);
 
     if(!resp.ok){
-      alert(data.error || 'Login failed');
+      alert(data.error || 'Wrong index number or password');
       btn.textContent = 'Login →';
       btn.disabled = false;
       return;
     }
 
+    // Save to localStorage
     localStorage.setItem('decp_token', data.token);
     localStorage.setItem('decp_user', JSON.stringify(data.user));
 
+    // Set current user
     currentUser = {
       name: data.user.name,
       index: data.user.indexNo,
@@ -1116,6 +1113,7 @@ async function doLogin(){
     btn.disabled = false;
   }
 }
+
 async function doRegister(){
   const first = document.getElementById('regFirst').value.trim();
   const last = document.getElementById('regLast').value.trim();
@@ -1656,9 +1654,15 @@ window.addEventListener('load', () => {
   const savedUser = localStorage.getItem('decp_user');
   const savedToken = localStorage.getItem('decp_token');
   if(savedUser && savedToken){
-    currentUser = JSON.parse(savedUser);
-    currentUser.avatar = currentUser.name.split(' ').map(w=>w[0]).join('').toUpperCase();
-    launchApp();
+    try {
+      currentUser = JSON.parse(savedUser);
+      currentUser.avatar = currentUser.name
+        .split(' ').map(w=>w[0]).join('').toUpperCase();
+      launchApp();
+    } catch(e) {
+      localStorage.removeItem('decp_user');
+      localStorage.removeItem('decp_token');
+    }
   }
 });
 </script>
