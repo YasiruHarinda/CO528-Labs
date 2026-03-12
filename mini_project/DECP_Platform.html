@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DECP – Dept. Engagement & Career Platform | UoP CE</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --navy: #0a1628;
+    --navy2: #0f1f3d;
+    --blue: #1a5aff;
+    --cyan: #00d4ff;
+    --gold: #f5a623;
+    --white: #f0f4ff;
+    --muted: #8899bb;
+    --card: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.08);
+    --success: #00c896;
+    --danger: #ff4f6a;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'DM Sans',sans-serif;
+    background:var(--navy);
+    color:var(--white);
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  /* ─── BG MESH ─── */
+  body::before{
+    content:'';
+    position:fixed;inset:0;
+    background:
+      radial-gradient(ellipse 60% 50% at 10% 20%,rgba(26,90,255,0.18) 0%,transparent 70%),
+      radial-gradient(ellipse 50% 40% at 90% 80%,rgba(0,212,255,0.12) 0%,transparent 70%);
+    pointer-events:none;z-index:0;
+  }
+  /* ─── SIDEBAR ─── */
+  .sidebar{
+    position:fixed;left:0;top:0;bottom:0;width:220px;
+    background:rgba(10,22,40,0.96);
+    border-right:1px solid var(--border);
+    display:flex;flex-direction:column;
+    padding:0;z-index:100;
+    backdrop-filter:blur(20px);
+  }
+  .logo{
+    padding:22px 20px 18px;
+    border-bottom:1px solid var(--border);
+  }
+  .logo h1{
+    font-family:'Syne',sans-serif;
+    font-size:20px;font-weight:800;
+    background:linear-gradient(135deg,var(--cyan),var(--blue));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;
+    line-height:1.1;
+  }
+  .logo span{
+    font-size:10px;color:var(--muted);
+    font-weight:300;letter-spacing:1.5px;text-transform:uppercase;
+    -webkit-text-fill-color:var(--muted);
+  }
+  .nav{flex:1;padding:16px 0;overflow-y:auto}
+  .nav-section{
+    padding:6px 16px 2px;
+    font-size:9px;letter-spacing:2px;text-transform:uppercase;
+    color:var(--muted);font-weight:500;margin-top:10px;
+  }
+  .nav-item{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 20px;cursor:pointer;
+    font-size:13.5px;font-weight:400;color:rgba(240,244,255,0.7);
+    transition:all .2s;position:relative;border-radius:0;
+    border-left:3px solid transparent;
+  }
+  .nav-item:hover,.nav-item.active{
+    color:var(--white);
+    background:rgba(26,90,255,0.1);
+    border-left-color:var(--blue);
+  }
+  .nav-item.active{color:var(--cyan);border-left-color:var(--cyan)}
+  .nav-item .icon{font-size:16px;width:20px;text-align:center}
+  .nav-badge{
+    margin-left:auto;background:var(--blue);
+    color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;
+  }
+  .sidebar-footer{
+    padding:16px 20px;border-top:1px solid var(--border);
+  }
+  .user-chip{
+    display:flex;align-items:center;gap:10px;cursor:pointer;
+  }
+  .avatar{
+    width:34px;height:34px;border-radius:50%;
+    background:linear-gradient(135deg,var(--blue),var(--cyan));
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Syne',sans-serif;font-weight:700;font-size:13px;
+    flex-shrink:0;
+  }
+  .user-info{flex:1;min-width:0}
+  .user-info .name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .user-info .role{font-size:10px;color:var(--muted)}
+
+  /* ─── MAIN ─── */
+  .main{
+    margin-left:220px;
+    min-height:100vh;
+    position:relative;z-index:1;
+  }
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);
+    border-bottom:1px solid var(--border);
+    padding:12px 28px;
+    display:flex;align-items:center;gap:16px;
+  }
+  .topbar h2{
+    font-family:'Syne',sans-serif;font-size:18px;font-weight:700;flex:1;
+  }
+  .search-box{
+    display:flex;align-items:center;gap:8px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid var(--border);border-radius:10px;
+    padding:7px 14px;width:220px;
+  }
+  .search-box input{
+    background:none;border:none;outline:none;
+    color:var(--white);font-size:13px;width:100%;
+    font-family:'DM Sans',sans-serif;
+  }
+  .search-box input::placeholder{color:var(--muted)}
+  .btn{
+    padding:8px 18px;border-radius:9px;border:none;cursor:pointer;
+    font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;
+    transition:all .2s;
+  }
+  .btn-primary{background:var(--blue);color:#fff}
+  .btn-primary:hover{background:#2d6fff;transform:translateY(-1px)}
+  .btn-outline{
+    background:transparent;color:var(--cyan);
+    border:1px solid var(--cyan);
+  }
+  .btn-outline:hover{background:rgba(0,212,255,0.1)}
+  .btn-sm{padding:5px 12px;font-size:12px;border-radius:7px}
+  .btn-danger{background:var(--danger);color:#fff}
+
+  /* ─── CONTENT ─── */
+  .content{padding:24px 28px;display:none}
+  .content.active{display:block}
+
+  /* ─── CARDS ─── */
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;padding:20px;
+    backdrop-filter:blur(10px);
+  }
+  .card-title{
+    font-family:'Syne',sans-serif;font-size:14px;font-weight:700;
+    color:var(--white);margin-bottom:4px;
+  }
+  .card-sub{font-size:12px;color:var(--muted)}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+
+  /* ─── STAT CARDS ─── */
+  .stat-card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:14px;padding:18px 20px;
+    display:flex;align-items:center;gap:14px;
+  }
+  .stat-icon{
+    width:46px;height:46px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;flex-shrink:0;
+  }
+  .stat-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800}
+  .stat-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+  .stat-change{font-size:11px;margin-top:4px}
+  .up{color:var(--success)}.down{color:var(--danger)}
+
+  /* ─── FEED ─── */
+  .post-composer{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:14px;padding:18px;margin-bottom:18px;
+  }
+  .post-composer textarea{
+    width:100%;background:rgba(255,255,255,0.04);
+    border:1px solid var(--border);border-radius:10px;
+    color:var(--white);font-family:'DM Sans',sans-serif;
+    font-size:14px;padding:12px;resize:none;outline:none;
+    min-height:80px;
+  }
+  .post-actions{display:flex;gap:8px;margin-top:12px;align-items:center}
+  .post-actions .sep{flex:1}
+  .media-btn{
+    display:flex;align-items:center;gap:6px;
+    background:none;border:1px solid var(--border);
+    color:var(--muted);border-radius:8px;padding:6px 12px;
+    font-size:12px;cursor:pointer;transition:.2s;
+    font-family:'DM Sans',sans-serif;
+  }
+  .media-btn:hover{border-color:var(--blue);color:var(--blue)}
+
+  .post-card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:14px;padding:18px;margin-bottom:14px;
+    transition:.2s;
+  }
+  .post-card:hover{border-color:rgba(26,90,255,0.3)}
+  .post-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .post-body{font-size:14px;line-height:1.6;color:rgba(240,244,255,0.85)}
+  .post-img{
+    width:100%;border-radius:10px;margin-top:12px;
+    max-height:260px;object-fit:cover;
+    background:rgba(255,255,255,0.04);
+    display:flex;align-items:center;justify-content:center;
+    font-size:40px;color:var(--muted);min-height:160px;
+  }
+  .post-footer{
+    display:flex;gap:0;margin-top:14px;
+    border-top:1px solid var(--border);padding-top:12px;
+  }
+  .react-btn{
+    display:flex;align-items:center;gap:6px;
+    background:none;border:none;color:var(--muted);
+    font-size:13px;cursor:pointer;padding:5px 16px;
+    border-radius:8px;transition:.2s;
+    font-family:'DM Sans',sans-serif;
+  }
+  .react-btn:hover{color:var(--blue);background:rgba(26,90,255,0.08)}
+  .react-btn.liked{color:var(--danger)}
+
+  /* ─── TAGS ─── */
+  .tag{
+    display:inline-block;padding:3px 10px;border-radius:6px;
+    font-size:11px;font-weight:500;
+  }
+  .tag-blue{background:rgba(26,90,255,0.2);color:var(--cyan)}
+  .tag-gold{background:rgba(245,166,35,0.2);color:var(--gold)}
+  .tag-green{background:rgba(0,200,150,0.2);color:var(--success)}
+  .tag-red{background:rgba(255,79,106,0.2);color:var(--danger)}
+
+  /* ─── JOB CARD ─── */
+  .job-card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:14px;padding:18px;
+    display:flex;align-items:flex-start;gap:14px;
+    transition:.2s;cursor:pointer;margin-bottom:12px;
+  }
+  .job-card:hover{border-color:rgba(26,90,255,0.4);transform:translateX(3px)}
+  .job-logo{
+    width:46px;height:46px;border-radius:12px;
+    background:rgba(255,255,255,0.06);
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;flex-shrink:0;
+  }
+  .job-info{flex:1}
+  .job-title{font-family:'Syne',sans-serif;font-weight:700;font-size:14px}
+  .job-company{font-size:12px;color:var(--muted);margin:2px 0 8px}
+  .job-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+  /* ─── EVENTS ─── */
+  .event-card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:14px;padding:18px;margin-bottom:12px;
+    display:flex;gap:16px;align-items:flex-start;
+  }
+  .event-date{
+    background:linear-gradient(135deg,var(--blue),#0040cc);
+    border-radius:12px;padding:10px 14px;text-align:center;
+    min-width:54px;flex-shrink:0;
+  }
+  .event-date .day{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;line-height:1}
+  .event-date .month{font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:.8}
+
+  /* ─── MEMBERS ─── */
+  .member-card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:14px;padding:18px;text-align:center;
+    transition:.2s;cursor:pointer;
+  }
+  .member-card:hover{border-color:rgba(0,212,255,0.3);transform:translateY(-2px)}
+  .member-avatar{
+    width:54px;height:54px;border-radius:50%;
+    margin:0 auto 10px;
+    background:linear-gradient(135deg,var(--blue),var(--cyan));
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Syne',sans-serif;font-weight:700;font-size:18px;
+  }
+  .member-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:700}
+  .member-batch{font-size:11px;color:var(--muted);margin-top:2px}
+
+  /* ─── CHAT ─── */
+  .chat-layout{display:grid;grid-template-columns:260px 1fr;gap:0;height:calc(100vh - 110px)}
+  .chat-list{
+    border-right:1px solid var(--border);
+    overflow-y:auto;
+  }
+  .chat-item{
+    padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);
+    display:flex;gap:10px;align-items:center;transition:.15s;
+  }
+  .chat-item:hover,.chat-item.active{background:rgba(26,90,255,0.08)}
+  .chat-item.active{border-right:2px solid var(--cyan)}
+  .chat-info{flex:1;min-width:0}
+  .chat-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chat-preview{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .chat-time{font-size:10px;color:var(--muted);flex-shrink:0}
+
+  .chat-window{display:flex;flex-direction:column;height:100%}
+  .chat-header{
+    padding:14px 20px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:12px;
+  }
+  .messages{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
+  .msg{display:flex;gap:10px;max-width:70%}
+  .msg.sent{margin-left:auto;flex-direction:row-reverse}
+  .msg-bubble{
+    padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5;
+  }
+  .msg.recv .msg-bubble{background:rgba(255,255,255,0.07);border-radius:4px 14px 14px 14px}
+  .msg.sent .msg-bubble{background:var(--blue);border-radius:14px 4px 14px 14px}
+  .msg-time{font-size:10px;color:var(--muted);margin-top:3px;text-align:right}
+  .chat-input-row{
+    padding:14px 20px;border-top:1px solid var(--border);
+    display:flex;gap:10px;
+  }
+  .chat-input-row input{
+    flex:1;background:rgba(255,255,255,0.05);
+    border:1px solid var(--border);border-radius:10px;
+    color:var(--white);font-family:'DM Sans',sans-serif;
+    font-size:13px;padding:10px 14px;outline:none;
+  }
+
+  /* ─── RESEARCH ─── */
+  .research-card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:14px;padding:20px;margin-bottom:14px;
+    transition:.2s;
+  }
+  .research-card:hover{border-color:rgba(245,166,35,0.3)}
+  .collab-avatars{display:flex;margin-top:10px}
+  .collab-avatar{
+    width:28px;height:28px;border-radius:50%;
+    background:linear-gradient(135deg,var(--blue),var(--cyan));
+    display:flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:700;
+    border:2px solid var(--navy);margin-left:-6px;
+  }
+  .collab-avatar:first-child{margin-left:0}
+
+  /* ─── TABS ─── */
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:20px}
+  .tab{
+    padding:8px 18px;cursor:pointer;font-size:13px;color:var(--muted);
+    border-bottom:2px solid transparent;transition:.2s;
+  }
+  .tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+
+  /* ─── MODAL ─── */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(5,10,20,0.8);
+    backdrop-filter:blur(6px);z-index:200;
+    display:none;align-items:center;justify-content:center;
+  }
+  .modal-backdrop.show{display:flex}
+  .modal{
+    background:#0d1e38;border:1px solid rgba(255,255,255,0.1);
+    border-radius:18px;padding:28px;width:90%;max-width:480px;
+    max-height:85vh;overflow-y:auto;
+  }
+  .modal-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:18px}
+  .form-group{margin-bottom:14px}
+  .form-label{font-size:12px;color:var(--muted);margin-bottom:6px;display:block;letter-spacing:.5px}
+  .form-input{
+    width:100%;background:rgba(255,255,255,0.05);
+    border:1px solid var(--border);border-radius:9px;
+    color:var(--white);font-family:'DM Sans',sans-serif;
+    font-size:13px;padding:10px 13px;outline:none;transition:.2s;
+  }
+  .form-input:focus{border-color:var(--blue)}
+  .form-input option{background:#0d1e38}
+  .modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+
+  /* ─── NOTIFICATION TOAST ─── */
+  .toast{
+    position:fixed;bottom:24px;right:24px;z-index:300;
+    background:#0d1e38;border:1px solid var(--success);
+    border-radius:12px;padding:14px 18px;
+    display:flex;align-items:center;gap:10px;
+    font-size:13px;transform:translateY(80px);opacity:0;
+    transition:.35s cubic-bezier(.34,1.56,.64,1);pointer-events:none;
+  }
+  .toast.show{transform:translateY(0);opacity:1}
+
+  /* ─── ANALYTICS ─── */
+  .chart-bar-wrap{margin-top:10px}
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .bar-label{font-size:12px;color:var(--muted);min-width:80px}
+  .bar-track{flex:1;background:rgba(255,255,255,0.06);border-radius:99px;height:8px}
+  .bar-fill{height:100%;border-radius:99px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+  .bar-val{font-size:12px;color:var(--white);min-width:30px;text-align:right}
+
+  /* ─── PROFILE ─── */
+  .profile-banner{
+    height:140px;border-radius:16px;
+    background:linear-gradient(135deg,#0a2a6e,#0040cc,#1a5aff,#00aaff);
+    position:relative;margin-bottom:50px;
+  }
+  .profile-pic{
+    width:80px;height:80px;border-radius:50%;
+    background:linear-gradient(135deg,var(--blue),var(--cyan));
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Syne',sans-serif;font-weight:800;font-size:28px;
+    border:4px solid var(--navy);
+    position:absolute;bottom:-40px;left:24px;
+  }
+
+  /* ─── LOADING SPINNER ─── */
+  .spinner{
+    width:24px;height:24px;border:2px solid var(--border);
+    border-top-color:var(--cyan);border-radius:50%;
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+  .fade-up{animation:fadeUp .4s ease both}
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar{width:4px;height:4px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:99px}
+
+  /* ─── AUTH PAGE ─── */
+  .auth-page{
+    position:fixed;inset:0;z-index:1000;
+    background:var(--navy);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .auth-card{
+    width:400px;background:rgba(15,31,61,0.9);
+    border:1px solid var(--border);border-radius:20px;
+    padding:36px;backdrop-filter:blur(20px);
+  }
+  .auth-card .logo-big{
+    font-family:'Syne',sans-serif;font-size:28px;font-weight:800;
+    background:linear-gradient(135deg,var(--cyan),var(--blue));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;text-align:center;margin-bottom:4px;
+  }
+  .auth-card .sub{text-align:center;color:var(--muted);font-size:12px;margin-bottom:28px}
+  .auth-switch{text-align:center;margin-top:18px;font-size:13px;color:var(--muted)}
+  .auth-switch a{color:var(--cyan);cursor:pointer;text-decoration:none}
+
+  /* ─── RESPONSIVE ─── */
+  @media(max-width:768px){
+    .sidebar{width:60px}
+    .sidebar .logo h1,.sidebar .logo span,.nav-item span,.nav-section,.user-info,.nav-badge{display:none}
+    .nav-item{padding:12px;justify-content:center}
+    .main{margin-left:60px}
+    .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+    .chat-layout{grid-template-columns:1fr}
+    .chat-list{display:none}
+  }
+
+  .dot-online{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--success);display:inline-block;
+    box-shadow:0 0 6px var(--success);
+  }
+
+  .divider{height:1px;background:var(--border);margin:18px 0}
+  .text-muted{color:var(--muted)}
+  .text-cyan{color:var(--cyan)}
+  .text-gold{color:var(--gold)}
+  .mb-12{margin-bottom:12px}
+  .mb-18{margin-bottom:18px}
+  .flex{display:flex}.items-center{align-items:center}.gap-8{gap:8px}.gap-12{gap:12px}
+  .justify-between{justify-content:space-between}
+  .mt-4{margin-top:4px}.mt-8{margin-top:8px}.mt-12{margin-top:12px}
+  .w-full{width:100%}
+  .section-header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:16px;
+  }
+  .section-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ AUTH PAGE ══════════════ -->
+<div class="auth-page" id="authPage">
+  <div class="auth-card fade-up">
+    <div class="logo-big">DECP</div>
+    <div class="sub">Department Engagement & Career Platform<br>University of Peradeniya · Computer Engineering</div>
+
+    <!-- Login Form -->
+    <div id="loginForm">
+      <div class="form-group">
+        <label class="form-label">Student / Alumni Index No.</label>
+        <input class="form-input" id="loginIndex" type="text" placeholder="e.g. E/19/001"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="loginPwd" type="password" placeholder="••••••••"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Login as</label>
+        <select class="form-input" id="loginRole">
+          <option value="student">Student</option>
+          <option value="alumni">Alumni</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <button class="btn btn-primary w-full" onclick="doLogin()" style="margin-top:8px;width:100%;padding:12px">Login →</button>
+      <div class="auth-switch">Don't have an account? <a onclick="toggleAuth('register')">Register</a></div>
+    </div>
+
+    <!-- Register Form -->
+    <div id="registerForm" style="display:none">
+      <div class="grid-2" style="gap:10px">
+        <div class="form-group">
+          <label class="form-label">First Name</label>
+          <input class="form-input" id="regFirst" placeholder="Kamal"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name</label>
+          <input class="form-input" id="regLast" placeholder="Perera"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Index Number</label>
+        <input class="form-input" id="regIndex" placeholder="E/19/001"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Batch</label>
+        <select class="form-input" id="regBatch">
+          <option>E14</option><option>E15</option><option>E16</option><option>E17</option>
+          <option>E18</option><option selected>E19</option><option>E20</option><option>E21</option>
+          <option>E22</option><option>E23</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <select class="form-input" id="regRole">
+          <option value="student">Student</option>
+          <option value="alumni">Alumni</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" placeholder="••••••••"/>
+      </div>
+      <button class="btn btn-primary" onclick="doRegister()" style="margin-top:8px;width:100%;padding:12px">Create Account →</button>
+      <div class="auth-switch">Already have an account? <a onclick="toggleAuth('login')">Login</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ SIDEBAR ══════════════ -->
+<div class="sidebar" id="sidebar">
+  <div class="logo">
+    <h1>DECP</h1>
+    <span>UoP · CE Dept</span>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Main</div>
+    <div class="nav-item active" onclick="showPage('dashboard')">
+      <span class="icon">🏠</span><span>Dashboard</span>
+    </div>
+    <div class="nav-item" onclick="showPage('feed')">
+      <span class="icon">📰</span><span>Feed</span>
+      <span class="nav-badge" id="feedBadge">3</span>
+    </div>
+    <div class="nav-item" onclick="showPage('members')">
+      <span class="icon">👥</span><span>Members</span>
+    </div>
+
+    <div class="nav-section">Career</div>
+    <div class="nav-item" onclick="showPage('jobs')">
+      <span class="icon">💼</span><span>Jobs & Internships</span>
+    </div>
+    <div class="nav-item" onclick="showPage('events')">
+      <span class="icon">📅</span><span>Events</span>
+    </div>
+
+    <div class="nav-section">Collaborate</div>
+    <div class="nav-item" onclick="showPage('research')">
+      <span class="icon">🔬</span><span>Research</span>
+    </div>
+    <div class="nav-item" onclick="showPage('messaging')">
+      <span class="icon">💬</span><span>Messaging</span>
+      <span class="nav-badge" id="msgBadge">2</span>
+    </div>
+
+    <div class="nav-section">Admin</div>
+    <div class="nav-item" onclick="showPage('analytics')">
+      <span class="icon">📊</span><span>Analytics</span>
+    </div>
+    <div class="nav-item" onclick="showPage('profile')">
+      <span class="icon">👤</span><span>My Profile</span>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-chip" onclick="showPage('profile')">
+      <div class="avatar" id="sidebarAvatar">?</div>
+      <div class="user-info">
+        <div class="name" id="sidebarName">Loading...</div>
+        <div class="role" id="sidebarRole">student</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MAIN ══════════════ -->
+<div class="main" id="mainApp" style="display:none">
+  <div class="topbar">
+    <h2 id="pageTitle">Dashboard</h2>
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" placeholder="Search members, posts, jobs..."/>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="showToast('🔔 Notifications enabled!')">🔔</button>
+    <button class="btn btn-danger btn-sm" onclick="logout()">Logout</button>
+  </div>
+
+  <!-- ─── DASHBOARD ─── -->
+  <div class="content active" id="page-dashboard">
+    <div class="grid-4 mb-18">
+      <div class="stat-card fade-up">
+        <div class="stat-icon" style="background:rgba(26,90,255,0.15)">👥</div>
+        <div>
+          <div class="stat-val text-cyan" id="statMembers">1,247</div>
+          <div class="stat-lbl">Total Members</div>
+          <div class="stat-change up">↑ 12 this week</div>
+        </div>
+      </div>
+      <div class="stat-card fade-up" style="animation-delay:.08s">
+        <div class="stat-icon" style="background:rgba(245,166,35,0.15)">💼</div>
+        <div>
+          <div class="stat-val text-gold">38</div>
+          <div class="stat-lbl">Open Jobs</div>
+          <div class="stat-change up">↑ 5 new today</div>
+        </div>
+      </div>
+      <div class="stat-card fade-up" style="animation-delay:.16s">
+        <div class="stat-icon" style="background:rgba(0,200,150,0.15)">📅</div>
+        <div>
+          <div class="stat-val" style="color:var(--success)">7</div>
+          <div class="stat-lbl">Upcoming Events</div>
+          <div class="stat-change">Next: Apr 14</div>
+        </div>
+      </div>
+      <div class="stat-card fade-up" style="animation-delay:.24s">
+        <div class="stat-icon" style="background:rgba(255,79,106,0.15)">🔬</div>
+        <div>
+          <div class="stat-val" style="color:var(--danger)">24</div>
+          <div class="stat-lbl">Research Projects</div>
+          <div class="stat-change up">↑ 3 this month</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="gap:18px">
+      <!-- Recent Activity -->
+      <div class="card fade-up">
+        <div class="section-header">
+          <div class="card-title">Recent Activity</div>
+          <button class="btn btn-outline btn-sm" onclick="showPage('feed')">View All</button>
+        </div>
+        <div id="recentActivity"></div>
+      </div>
+      <!-- Upcoming Events -->
+      <div class="card fade-up" style="animation-delay:.1s">
+        <div class="section-header">
+          <div class="card-title">Upcoming Events</div>
+          <button class="btn btn-outline btn-sm" onclick="showPage('events')">View All</button>
+        </div>
+        <div id="upcomingEvents"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:18px" class="card fade-up">
+      <div class="section-header">
+        <div class="card-title">Members by Batch</div>
+        <div class="spinner" id="batchSpinner"></div>
+      </div>
+      <div id="batchBars" class="chart-bar-wrap"></div>
+    </div>
+  </div>
+
+  <!-- ─── FEED ─── -->
+  <div class="content" id="page-feed">
+    <div style="max-width:680px;margin:0 auto">
+      <div class="post-composer">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div class="avatar" id="composerAvatar" style="flex-shrink:0">?</div>
+          <textarea id="postText" placeholder="What's on your mind? Share an update, achievement, or question..."></textarea>
+        </div>
+        <div class="post-actions">
+          <button class="media-btn">📷 Photo</button>
+          <button class="media-btn">🎥 Video</button>
+          <button class="media-btn">📎 File</button>
+          <div class="sep"></div>
+          <button class="btn btn-primary btn-sm" onclick="submitPost()">Post</button>
+        </div>
+      </div>
+      <div id="feedPosts"></div>
+    </div>
+  </div>
+
+  <!-- ─── MEMBERS ─── -->
+  <div class="content" id="page-members">
+    <div class="section-header mb-18">
+      <div class="section-title">Department Members</div>
+      <div style="display:flex;gap:8px">
+        <select class="form-input" id="filterBatch" style="width:auto;padding:6px 12px;font-size:13px" onchange="filterMembers()">
+          <option value="">All Batches</option>
+          <option>E19</option><option>E20</option><option>E21</option>
+          <option>E22</option><option>E23</option><option>E18</option>
+          <option>E17</option><option>E16</option>
+        </select>
+        <select class="form-input" id="filterRole" style="width:auto;padding:6px 12px;font-size:13px" onchange="filterMembers()">
+          <option value="">All Roles</option>
+          <option value="student">Students</option>
+          <option value="alumni">Alumni</option>
+        </select>
+      </div>
+    </div>
+    <div style="text-align:center;padding:20px" id="membersLoading">
+      <div class="spinner" style="margin:0 auto 10px"></div>
+      <div class="text-muted" style="font-size:13px">Fetching members from CE API...</div>
+    </div>
+    <div class="grid-4" id="membersGrid" style="display:none"></div>
+  </div>
+
+  <!-- ─── JOBS ─── -->
+  <div class="content" id="page-jobs">
+    <div class="section-header mb-18">
+      <div class="section-title">Jobs & Internships</div>
+      <button class="btn btn-primary btn-sm" onclick="openModal('addJob')">+ Post Opportunity</button>
+    </div>
+    <div class="tabs">
+      <div class="tab active" onclick="filterJobs('all',this)">All</div>
+      <div class="tab" onclick="filterJobs('fulltime',this)">Full Time</div>
+      <div class="tab" onclick="filterJobs('internship',this)">Internships</div>
+      <div class="tab" onclick="filterJobs('remote',this)">Remote</div>
+    </div>
+    <div id="jobsList"></div>
+  </div>
+
+  <!-- ─── EVENTS ─── -->
+  <div class="content" id="page-events">
+    <div class="section-header mb-18">
+      <div class="section-title">Events & Announcements</div>
+      <button class="btn btn-primary btn-sm" onclick="openModal('addEvent')">+ Add Event</button>
+    </div>
+    <div id="eventsList"></div>
+  </div>
+
+  <!-- ─── RESEARCH ─── -->
+  <div class="content" id="page-research">
+    <div class="section-header mb-18">
+      <div class="section-title">Research Collaboration</div>
+      <button class="btn btn-primary btn-sm" onclick="openModal('addResearch')">+ New Project</button>
+    </div>
+    <div id="researchList"></div>
+  </div>
+
+  <!-- ─── MESSAGING ─── -->
+  <div class="content" id="page-messaging">
+    <div class="chat-layout">
+      <div class="chat-list">
+        <div style="padding:12px 14px;border-bottom:1px solid var(--border)">
+          <input class="form-input" placeholder="Search conversations..." style="font-size:12px;padding:8px 12px"/>
+        </div>
+        <div id="chatList"></div>
+      </div>
+      <div class="chat-window">
+        <div class="chat-header" id="chatHeader">
+          <div class="avatar" style="width:36px;height:36px;font-size:14px">K</div>
+          <div>
+            <div style="font-size:14px;font-weight:500">Kamal Perera</div>
+            <div style="font-size:11px;color:var(--muted)"><span class="dot-online"></span> Online</div>
+          </div>
+        </div>
+        <div class="messages" id="messages"></div>
+        <div class="chat-input-row">
+          <input type="text" id="msgInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMsg()"/>
+          <button class="btn btn-primary btn-sm" onclick="sendMsg()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── ANALYTICS ─── -->
+  <div class="content" id="page-analytics">
+    <div class="section-title mb-18">Analytics Dashboard</div>
+    <div class="grid-3" style="gap:16px;margin-bottom:18px">
+      <div class="card">
+        <div class="card-title">Active Users</div>
+        <div class="stat-val text-cyan" style="font-size:36px;margin:8px 0">342</div>
+        <div class="card-sub">Last 30 days</div>
+        <div class="chart-bar-wrap mt-8" id="activeChart"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Job Applications</div>
+        <div class="stat-val text-gold" style="font-size:36px;margin:8px 0">127</div>
+        <div class="card-sub">This month</div>
+        <div class="chart-bar-wrap mt-8" id="appsChart"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Popular Posts</div>
+        <div class="stat-val" style="font-size:36px;margin:8px 0;color:var(--success)">89</div>
+        <div class="card-sub">Engagements today</div>
+        <div class="chart-bar-wrap mt-8" id="postsChart"></div>
+      </div>
+    </div>
+    <div class="grid-2" style="gap:16px">
+      <div class="card">
+        <div class="card-title mb-12">Members by Batch</div>
+        <div id="analyticsMembers"></div>
+      </div>
+      <div class="card">
+        <div class="card-title mb-12">Platform Usage</div>
+        <div id="analyticsUsage"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── PROFILE ─── -->
+  <div class="content" id="page-profile">
+    <div style="max-width:700px;margin:0 auto">
+      <div class="profile-banner">
+        <div class="profile-pic" id="profilePic">?</div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between">
+          <div>
+            <div class="section-title" id="profileName">Loading...</div>
+            <div class="text-muted mt-4" style="font-size:13px" id="profileIndex">E/19/001</div>
+            <div style="margin-top:8px;display:flex;gap:8px" id="profileTags"></div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="openModal('editProfile')">Edit Profile</button>
+        </div>
+        <div class="divider"></div>
+        <div class="grid-2">
+          <div>
+            <div class="form-label">Email</div>
+            <div style="font-size:13px" id="profileEmail">—</div>
+          </div>
+          <div>
+            <div class="form-label">GitHub</div>
+            <div style="font-size:13px;color:var(--cyan)" id="profileGithub">—</div>
+          </div>
+          <div style="margin-top:12px">
+            <div class="form-label">LinkedIn</div>
+            <div style="font-size:13px;color:var(--cyan)" id="profileLinkedIn">—</div>
+          </div>
+          <div style="margin-top:12px">
+            <div class="form-label">Batch</div>
+            <div style="font-size:13px" id="profileBatch">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title mb-12">My Posts</div>
+        <div id="myPosts"></div>
+      </div>
+    </div>
+  </div>
+</div><!-- /main -->
+
+<!-- ══════════════ MODALS ══════════════ -->
+<!-- Add Job -->
+<div class="modal-backdrop" id="modal-addJob">
+  <div class="modal">
+    <div class="modal-title">Post Job / Internship</div>
+    <div class="form-group"><label class="form-label">Job Title</label><input class="form-input" id="jTitle" placeholder="Software Engineer Intern"/></div>
+    <div class="form-group"><label class="form-label">Company</label><input class="form-input" id="jCompany" placeholder="XYZ Tech"/></div>
+    <div class="form-group"><label class="form-label">Type</label>
+      <select class="form-input" id="jType"><option value="fulltime">Full Time</option><option value="internship">Internship</option><option value="remote">Remote</option></select>
+    </div>
+    <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="jLocation" placeholder="Colombo / Remote"/></div>
+    <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" id="jDesc" placeholder="Role details..." style="min-height:80px;resize:none"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('addJob')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitJob()">Post</button>
+    </div>
+  </div>
+</div>
+<!-- Add Event -->
+<div class="modal-backdrop" id="modal-addEvent">
+  <div class="modal">
+    <div class="modal-title">Create Event</div>
+    <div class="form-group"><label class="form-label">Event Title</label><input class="form-input" id="eTitle" placeholder="Tech Talk: AI in Sri Lanka"/></div>
+    <div class="form-group"><label class="form-label">Date</label><input class="form-input" type="date" id="eDate"/></div>
+    <div class="form-group"><label class="form-label">Time</label><input class="form-input" type="time" id="eTime"/></div>
+    <div class="form-group"><label class="form-label">Location / Online Link</label><input class="form-input" id="eLocation" placeholder="E-Block Hall / Zoom link"/></div>
+    <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" id="eDesc" style="min-height:70px;resize:none" placeholder="Event details..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('addEvent')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitEvent()">Create</button>
+    </div>
+  </div>
+</div>
+<!-- Add Research -->
+<div class="modal-backdrop" id="modal-addResearch">
+  <div class="modal">
+    <div class="modal-title">New Research Project</div>
+    <div class="form-group"><label class="form-label">Project Title</label><input class="form-input" id="rTitle" placeholder="ML-based Traffic Prediction"/></div>
+    <div class="form-group"><label class="form-label">Field</label><input class="form-input" id="rField" placeholder="Machine Learning, IoT..."/></div>
+    <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" id="rDesc" style="min-height:70px;resize:none" placeholder="Abstract or brief description..."></textarea></div>
+    <div class="form-group"><label class="form-label">Looking for collaborators?</label>
+      <select class="form-input" id="rOpen"><option value="yes">Yes – open to join</option><option value="no">No – team complete</option></select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('addResearch')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitResearch()">Create Project</button>
+    </div>
+  </div>
+</div>
+<!-- Edit Profile -->
+<div class="modal-backdrop" id="modal-editProfile">
+  <div class="modal">
+    <div class="modal-title">Edit Profile</div>
+    <div class="form-group"><label class="form-label">Display Name</label><input class="form-input" id="epName" placeholder="Full Name"/></div>
+    <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="epEmail" type="email" placeholder="you@ce.pdn.ac.lk"/></div>
+    <div class="form-group"><label class="form-label">GitHub URL</label><input class="form-input" id="epGit" placeholder="https://github.com/username"/></div>
+    <div class="form-group"><label class="form-label">LinkedIn URL</label><input class="form-input" id="epLinkedIn" placeholder="https://linkedin.com/in/..."/></div>
+    <div class="form-group"><label class="form-label">Bio</label><textarea class="form-input" id="epBio" style="min-height:70px;resize:none" placeholder="A short bio..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('editProfile')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProfile()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span id="toastMsg">Done!</span>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+const API_BASE = 'http://localhost:3000';
+let currentUser = null;
+let posts = [];
+let jobs = [];
+let events = [];
+let research = [];
+let members = [];
+let allMembers = [];
+
+// ── SEED DATA ──
+const seedPosts = [
+  {id:1,author:'Kamal Perera',batch:'E19',avatar:'KP',text:'🎉 Just accepted an offer at WSO2 as a Software Engineer! Grateful for the CE community support throughout the journey.',time:'2h ago',likes:42,liked:false,comments:8},
+  {id:2,author:'Nimesha Weerasinghe',batch:'E20',avatar:'NW',text:'Looking for teammates for the IEEE hackathon next month. We need someone with ML experience. Comment if interested! 🤖',time:'4h ago',likes:17,liked:false,comments:5},
+  {id:3,author:'Dr. Roshan Silva',batch:'Staff',avatar:'RS',text:'📢 Reminder: CO528 Mini Project deadline is in 4 weeks. Please reach out during office hours for architecture design discussions.',time:'Yesterday',likes:31,liked:false,comments:12},
+  {id:4,author:'Thisara Bandara',batch:'E18',avatar:'TB',text:'🔬 Our research paper on "Federated Learning for Edge Devices" got accepted at IEEE ICIAFS 2025! Big shoutout to the team!',time:'2 days ago',likes:89,liked:false,comments:24},
+];
+const seedJobs = [
+  {id:1,company:'WSO2',title:'Software Engineering Intern',type:'internship',location:'Colombo',icon:'🏢',desc:'Work on open-source middleware and API management platforms. 3-6 months duration.',tags:['Java','React','AWS']},
+  {id:2,company:'IFS',title:'Software Engineer',type:'fulltime',location:'Colombo',icon:'🌐',desc:'Join the ERP product team. Strong CS fundamentals required.',tags:['C#','.NET','SQL']},
+  {id:3,company:'Surge Global',title:'Full Stack Developer',type:'remote',location:'Remote',icon:'⚡',desc:'Build fintech products serving markets globally. Flexible hours.',tags:['Node.js','Vue','PostgreSQL']},
+  {id:4,company:'Sysco LABS',title:'ML Engineer Intern',type:'internship',location:'Colombo',icon:'🤖',desc:'Apply ML to supply chain optimization for global restaurant industry.',tags:['Python','TensorFlow','GCP']},
+  {id:5,company:'99X',title:'Associate Tech Lead',type:'fulltime',location:'Colombo',icon:'🔷',desc:'Lead a small team building SaaS products for Nordic markets.',tags:['TypeScript','React','Azure']},
+];
+const seedEvents = [
+  {id:1,title:'Tech Talk: AI/ML in Industry',day:'14',month:'Apr',time:'2:00 PM',location:'E-Block Main Hall',desc:'Industry professionals share how they use ML in production systems.',rsvp:45,tag:'Talk'},
+  {id:2,title:'Alumni Networking Night',day:'20',month:'Apr',time:'6:30 PM',location:'Faculty Auditorium',desc:'Annual alumni-student mixer. Great opportunity to connect and find mentors.',rsvp:88,tag:'Networking'},
+  {id:3,title:'Hackathon: Smart Sri Lanka',day:'28',month:'Apr',time:'9:00 AM',location:'CE Building + Online',desc:'48-hour national hackathon. Teams of 3-5. Prizes worth Rs. 500,000.',rsvp:120,tag:'Hackathon'},
+  {id:4,title:'Research Showcase 2025',day:'10',month:'May',time:'10:00 AM',location:'Faculty Open Ground',desc:'Final year and postgraduate students present their research projects.',rsvp:200,tag:'Research'},
+];
+const seedResearch = [
+  {id:1,title:'Federated Learning for Edge IoT Devices',field:'Machine Learning / IoT',lead:'Thisara Bandara',open:false,members:4,desc:'Distributed training techniques for resource-constrained edge hardware.'},
+  {id:2,title:'Low-Resource Sinhala NLP Toolkit',field:'NLP / Linguistics',lead:'Amaya Senanayake',open:true,members:3,desc:'Building open-source NLP tools for the Sinhala language using transformer architectures.'},
+  {id:3,title:'Smart Campus Energy Monitoring',field:'IoT / Embedded Systems',lead:'Dilan Jayawardena',open:true,members:2,desc:'Real-time energy consumption analytics for university buildings using LoRaWAN sensors.'},
+];
+const seedChats = [
+  {id:1,name:'Kamal Perera',avatar:'KP',last:'Let me know if you need help',time:'10:23 AM',unread:2,online:true},
+
+];
+const seedMessages = [
+  {id:1,from:'other',text:'Hey! Did you finish the architecture diagrams for CO528?',time:'10:15 AM'},
+  {id:2,from:'me',text:'Almost! Working on the SOA diagram now. Will share tonight.',time:'10:18 AM'},
+  {id:3,from:'other',text:'Cool. I finished the deployment diagram. Using AWS EC2 + RDS.',time:'10:20 AM'},
+  {id:4,from:'me',text:'Perfect. Let\'s sync tomorrow morning before submission.',time:'10:21 AM'},
+  {id:5,from:'other',text:'Let me know if you need help',time:'10:23 AM'},
+];
+
+// ══════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════
+function toggleAuth(mode){
+  document.getElementById('loginForm').style.display = mode==='login'?'block':'none';
+  document.getElementById('registerForm').style.display = mode==='register'?'block':'none';
+}
+function doLogin(){
+  const idx = document.getElementById('loginIndex').value||'E/19/001';
+  const role = document.getElementById('loginRole').value;
+  currentUser = {name:'Current User',index:idx,role:role,batch:'E19',avatar:idx.replace(/\//g,'').slice(0,2).toUpperCase()};
+  // Try to get real name from index
+  const parts = idx.split('/');
+  if(parts.length>=2) currentUser.batch = 'E'+parts[1];
+  launchApp();
+}
+function doRegister(){
+  const first = document.getElementById('regFirst').value||'Student';
+  const last = document.getElementById('regLast').value||'User';
+  const idx = document.getElementById('regIndex').value||'E/19/001';
+  const role = document.getElementById('regRole').value;
+  const batch = document.getElementById('regBatch').value;
+  currentUser = {name:first+' '+last,index:idx,role,batch,avatar:(first[0]+last[0]).toUpperCase()};
+  launchApp();
+}
+function launchApp(){
+  document.getElementById('authPage').style.display='none';
+  document.getElementById('mainApp').style.display='block';
+  updateUserUI();
+  loadDashboard();
+  renderFeed();
+  renderJobs();
+  renderEvents();
+  renderResearch();
+  renderChats();
+  renderAnalytics();
+  loadMembers();
+  showToast('👋 Welcome back, '+currentUser.name+'!');
+}
+function logout(){
+  currentUser=null;
+  document.getElementById('authPage').style.display='flex';
+  document.getElementById('mainApp').style.display='none';
+}
+function updateUserUI(){
+  ['sidebarAvatar','composerAvatar','profilePic'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.textContent=currentUser.avatar;
+  });
+  document.getElementById('sidebarName').textContent=currentUser.name;
+  document.getElementById('sidebarRole').textContent=currentUser.role+' · '+currentUser.batch;
+  document.getElementById('profileName').textContent=currentUser.name;
+  document.getElementById('profileIndex').textContent=currentUser.index;
+  document.getElementById('profileTags').innerHTML=
+    `<span class="tag tag-blue">${currentUser.batch}</span>
+     <span class="tag tag-gold">${currentUser.role}</span>
+     <span class="tag tag-green">Active</span>`;
+}
+
+// ══════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════
+const pageTitles={dashboard:'Dashboard',feed:'Feed',members:'Members',jobs:'Jobs & Internships',events:'Events',research:'Research',messaging:'Messaging',analytics:'Analytics',profile:'My Profile'};
+function showPage(page){
+  document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{if(n.textContent.includes(pageTitles[page]?.split(' ')[0]))n.classList.add('active')});
+  document.getElementById('pageTitle').textContent=pageTitles[page]||page;
+  if(page==='feed') document.getElementById('feedBadge').style.display='none';
+  if(page==='messaging') document.getElementById('msgBadge').style.display='none';
+}
+
+// ══════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════
+function loadDashboard(){
+  // Recent activity
+  const ra=document.getElementById('recentActivity');
+  ra.innerHTML=seedPosts.slice(0,3).map(p=>`
+    <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:14px">
+      <div class="avatar" style="width:32px;height:32px;font-size:11px;flex-shrink:0">${p.avatar}</div>
+      <div>
+        <div style="font-size:12px;font-weight:500">${p.author} <span style="color:var(--muted);font-weight:400">posted an update</span></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4">${p.text.slice(0,80)}...</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">${p.time} · ❤️ ${p.likes}</div>
+      </div>
+    </div>`).join('');
+
+  // Events
+  const ue=document.getElementById('upcomingEvents');
+  ue.innerHTML=seedEvents.slice(0,3).map(e=>`
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+      <div class="event-date" style="padding:8px 10px;min-width:46px">
+        <div class="day">${e.day}</div>
+        <div class="month">${e.month}</div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:500">${e.title}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${e.location} · ${e.rsvp} going</div>
+      </div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════
+//  FEED
+// ══════════════════════════════════════════
+function renderFeed(){
+  posts=[...seedPosts];
+  drawFeed();
+}
+function drawFeed(){
+  document.getElementById('feedPosts').innerHTML=posts.map(p=>postHTML(p)).join('');
+}
+function postHTML(p){
+  return `<div class="post-card fade-up" id="post-${p.id}">
+    <div class="post-header">
+      <div class="avatar" style="width:38px;height:38px;font-size:13px">${p.avatar}</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:600">${p.author}</div>
+        <div style="font-size:11px;color:var(--muted)">${p.batch} · ${p.time}</div>
+      </div>
+    </div>
+    <div class="post-body">${p.text}</div>
+    <div class="post-footer">
+      <button class="react-btn ${p.liked?'liked':''}" onclick="toggleLike(${p.id})">
+        ${p.liked?'❤️':'🤍'} ${p.likes}
+      </button>
+      <button class="react-btn">💬 ${p.comments}</button>
+      <button class="react-btn">↗️ Share</button>
+    </div>
+  </div>`;
+}
+function toggleLike(id){
+  const p=posts.find(x=>x.id===id);
+  if(p){p.liked=!p.liked;p.likes+=p.liked?1:-1;drawFeed();}
+}
+function submitPost(){
+  const txt=document.getElementById('postText').value.trim();
+  if(!txt)return;
+  posts.unshift({id:Date.now(),author:currentUser.name,batch:currentUser.batch,avatar:currentUser.avatar,text:txt,time:'Just now',likes:0,liked:false,comments:0});
+  document.getElementById('postText').value='';
+  drawFeed();
+  showToast('✅ Post published!');
+}
+
+// ══════════════════════════════════════════
+//  MEMBERS (API)
+// ══════════════════════════════════════════
+const batchInfo={
+  E14:{count:62},E15:{count:60},E16:{count:60},E17:{count:70},
+  E18:{count:71},E19:{count:114},E20:{count:90},E21:{count:90},
+  E22:{count:100},E23:{count:100},E10:{count:6},E11:{count:9},E12:{count:9},E13:{count:6}
+};
+
+async function loadMembers(){
+  const loadEl=document.getElementById('membersLoading');
+  const gridEl=document.getElementById('membersGrid');
+  
+  // Try fetching from the actual CE API
+  try{
+    const resp = await fetch('https://api.ce.pdn.ac.lk/people/v1/students/E19/',{method:'GET'});
+    if(resp.ok){
+      const data=await resp.json();
+      // If success, use real data
+      const realMembers=Object.values(data).slice(0,20).map(s=>({
+        name:s.name_with_initials||s.preferred_name||'CE Student',
+        index:s.index_no||'E/19/?',
+        batch:'E19',
+        role:'student',
+        avatar:(s.name_with_initials||'CS').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(),
+        github:s.github_username||null,
+        linkedin:s.linkedin_url||null,
+      }));
+      allMembers=[...realMembers,...generateSeedMembers()];
+    }else{allMembers=generateSeedMembers();}
+  }catch(e){allMembers=generateSeedMembers();}
+  
+  loadEl.style.display='none';
+  gridEl.style.display='grid';
+  filterMembers();
+  renderBatchBars();
+}
+function generateSeedMembers(){
+  const names=['Kamal Perera','Nimesha Weerasinghe','Thisara Bandara','Amaya Silva','Dilan Jayawardena','Sahan Rajapaksa','Gayani Fernando','Nuwan Dissanayake','Dilini Mendis','Ruwan Kumara','Tharushi Senanayake','Kasun Wickramasinghe','Sachini Rathnayake','Pradeep Alwis','Malsha Gunawardena','Chathura Herath','Sanduni Pathirana','Ishan Ratnasiri','Dilshan Liyanage','Hiruni Nanayakkara'];
+  return names.map((n,i)=>({
+    name:n,
+    index:`E/${19+(i%5)}/0${String(i+1).padStart(2,'0')}`,
+    batch:'E'+(19+(i%5)),
+    role:i>14?'alumni':'student',
+    avatar:n.split(' ').map(w=>w[0]).join('').toUpperCase(),
+  }));
+}
+function filterMembers(){
+  const batch=document.getElementById('filterBatch').value;
+  const role=document.getElementById('filterRole').value;
+  let filtered=allMembers;
+  if(batch) filtered=filtered.filter(m=>m.batch===batch);
+  if(role) filtered=filtered.filter(m=>m.role===role);
+  document.getElementById('membersGrid').innerHTML=filtered.map(m=>`
+    <div class="member-card fade-up">
+      <div class="member-avatar">${m.avatar}</div>
+      <div class="member-name">${m.name}</div>
+      <div class="member-batch">${m.batch} · ${m.role}</div>
+      <div style="margin-top:8px">${m.role==='alumni'?'<span class="tag tag-gold">Alumni</span>':'<span class="tag tag-blue">Student</span>'}</div>
+      <button class="btn btn-outline btn-sm" style="margin-top:10px;width:100%" onclick="showToast('💬 Message sent to ${m.name}!')">Message</button>
+    </div>`).join('');
+}
+function renderBatchBars(){
+  const batches=['E19','E20','E21','E22','E23','E18','E17','E16'];
+  const counts={E19:114,E20:90,E21:90,E22:100,E23:100,E18:71,E17:70,E16:60};
+  const max=114;
+  const html=batches.map(b=>`
+    <div class="bar-row">
+      <div class="bar-label">${b}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(counts[b]/max*100).toFixed(0)}%;background:linear-gradient(90deg,var(--blue),var(--cyan))"></div></div>
+      <div class="bar-val">${counts[b]}</div>
+    </div>`).join('');
+  const el=document.getElementById('batchBars');
+  if(el){el.innerHTML=html;}
+  document.getElementById('batchSpinner').style.display='none';
+}
+
+// ══════════════════════════════════════════
+//  JOBS
+// ══════════════════════════════════════════
+let currentJobFilter='all';
+function renderJobs(){jobs=[...seedJobs];drawJobs();}
+function filterJobs(type,tab){
+  document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
+  tab.classList.add('active');
+  currentJobFilter=type;drawJobs();
+}
+function drawJobs(){
+  const list=currentJobFilter==='all'?jobs:jobs.filter(j=>j.type===currentJobFilter);
+  document.getElementById('jobsList').innerHTML=list.map(j=>`
+    <div class="job-card">
+      <div class="job-logo">${j.icon}</div>
+      <div class="job-info">
+        <div class="job-title">${j.title}</div>
+        <div class="job-company">${j.company} · ${j.location}</div>
+        <div class="job-meta">
+          <span class="tag ${j.type==='internship'?'tag-gold':j.type==='remote'?'tag-green':'tag-blue'}">${j.type}</span>
+          ${j.tags.map(t=>`<span style="font-size:11px;color:var(--muted)">${t}</span>`).join(' · ')}
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px">${j.desc}</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="showToast('📨 Applied to ${j.title} at ${j.company}!')">Apply</button>
+    </div>`).join('');
+}
+function submitJob(){
+  const j={id:Date.now(),title:document.getElementById('jTitle').value,company:document.getElementById('jCompany').value,type:document.getElementById('jType').value,location:document.getElementById('jLocation').value,icon:'💼',desc:document.getElementById('jDesc').value,tags:[]};
+  if(!j.title||!j.company)return;
+  jobs.unshift(j);drawJobs();closeModal('addJob');showToast('✅ Job posted!');
+}
+
+// ══════════════════════════════════════════
+//  EVENTS
+// ══════════════════════════════════════════
+function renderEvents(){events=[...seedEvents];drawEvents();}
+function drawEvents(){
+  document.getElementById('eventsList').innerHTML=events.map(e=>`
+    <div class="event-card">
+      <div class="event-date">
+        <div class="day">${e.day}</div>
+        <div class="month">${e.month}</div>
+      </div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <div style="font-family:Syne,sans-serif;font-size:14px;font-weight:700">${e.title}</div>
+          <span class="tag tag-blue" style="font-size:10px">${e.tag}</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">🕑 ${e.time} · 📍 ${e.location}</div>
+        <div style="font-size:12px;color:rgba(240,244,255,0.7)">${e.desc}</div>
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+          <div style="font-size:11px;color:var(--muted)">👥 ${e.rsvp} going</div>
+          <button class="btn btn-primary btn-sm" onclick="rsvp(${e.id},this)">RSVP</button>
+          <button class="btn btn-outline btn-sm" onclick="showToast('🔔 Reminder set!')">🔔 Remind</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function rsvp(id,btn){
+  const e=events.find(x=>x.id===id);
+  if(e){e.rsvp++;btn.textContent='✓ Going';btn.disabled=true;btn.style.opacity='.6';drawEvents();}
+  showToast('🎉 You\'re going!');
+}
+function submitEvent(){
+  const e={id:Date.now(),title:document.getElementById('eTitle').value,day:new Date(document.getElementById('eDate').value).getDate()||'TBD',month:new Date(document.getElementById('eDate').value).toLocaleString('default',{month:'short'})||'TBD',time:document.getElementById('eTime').value,location:document.getElementById('eLocation').value,desc:document.getElementById('eDesc').value,rsvp:0,tag:'Event'};
+  if(!e.title)return;
+  events.unshift(e);drawEvents();closeModal('addEvent');showToast('✅ Event created!');
+}
+
+// ══════════════════════════════════════════
+//  RESEARCH
+// ══════════════════════════════════════════
+function renderResearch(){research=[...seedResearch];drawResearch();}
+function drawResearch(){
+  document.getElementById('researchList').innerHTML=research.map(r=>`
+    <div class="research-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between">
+        <div>
+          <div style="font-family:Syne,sans-serif;font-size:15px;font-weight:700;margin-bottom:4px">${r.title}</div>
+          <div class="tag tag-gold" style="margin-bottom:8px;display:inline-block">${r.field}</div>
+          <div style="font-size:13px;color:rgba(240,244,255,0.75);line-height:1.5">${r.desc}</div>
+        </div>
+        ${r.open?`<span class="tag tag-green" style="flex-shrink:0;margin-left:12px">Open</span>`:'<span class="tag tag-red" style="flex-shrink:0;margin-left:12px">Closed</span>'}
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px">
+        <div style="font-size:12px;color:var(--muted)">Lead: <strong>${r.lead}</strong> · ${r.members} members</div>
+        ${r.open?`<button class="btn btn-outline btn-sm" onclick="joinResearch(${r.id},this)">Join Project</button>`:''}
+      </div>
+    </div>`).join('');
+}
+function joinResearch(id,btn){
+  const r=research.find(x=>x.id===id);
+  if(r){r.members++;btn.textContent='✓ Joined';btn.disabled=true;}
+  showToast('🔬 Joined research project!');
+}
+function submitResearch(){
+  const r={id:Date.now(),title:document.getElementById('rTitle').value,field:document.getElementById('rField').value,desc:document.getElementById('rDesc').value,lead:currentUser.name,open:document.getElementById('rOpen').value==='yes',members:1};
+  if(!r.title)return;
+  research.unshift(r);drawResearch();closeModal('addResearch');showToast('🔬 Research project created!');
+}
+
+// ══════════════════════════════════════════
+//  MESSAGING
+// ══════════════════════════════════════════
+function renderChats(){
+  document.getElementById('chatList').innerHTML=seedChats.map(c=>`
+    <div class="chat-item ${c.id===1?'active':''}" onclick="selectChat(${c.id},this,'${c.name}')">
+      <div class="avatar" style="width:36px;height:36px;font-size:12px;flex-shrink:0;position:relative">
+        ${c.avatar}
+        ${c.online?'<span style="position:absolute;bottom:0;right:0;width:9px;height:9px;background:var(--success);border-radius:50%;border:2px solid var(--navy)"></span>':''}
+      </div>
+      <div class="chat-info">
+        <div class="chat-name">${c.name}</div>
+        <div class="chat-preview">${c.last}</div>
+      </div>
+      <div>
+        <div class="chat-time">${c.time}</div>
+        ${c.unread?`<div style="text-align:right;margin-top:4px"><span class="nav-badge">${c.unread}</span></div>`:''}
+      </div>
+    </div>`).join('');
+  renderMessages();
+}
+let chatMsgs=[...seedMessages];
+function renderMessages(){
+  document.getElementById('messages').innerHTML=chatMsgs.map(m=>`
+    <div class="msg ${m.from==='me'?'sent':'recv'}">
+      ${m.from!=='me'?`<div class="avatar" style="width:28px;height:28px;font-size:10px;flex-shrink:0">KP</div>`:''}
+      <div>
+        <div class="msg-bubble">${m.text}</div>
+        <div class="msg-time">${m.time}</div>
+      </div>
+    </div>`).join('');
+  const msgs=document.getElementById('messages');
+  msgs.scrollTop=msgs.scrollHeight;
+}
+function selectChat(id,el,name){
+  document.querySelectorAll('.chat-item').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('chatHeader').innerHTML=`
+    <div class="avatar" style="width:36px;height:36px;font-size:14px">${name.split(' ').map(w=>w[0]).join('')}</div>
+    <div><div style="font-size:14px;font-weight:500">${name}</div>
+    <div style="font-size:11px;color:var(--muted)"><span class="dot-online"></span> Active</div></div>`;
+}
+function sendMsg(){
+  const inp=document.getElementById('msgInput');
+  const txt=inp.value.trim();
+  if(!txt)return;
+  const now=new Date();
+  chatMsgs.push({id:Date.now(),from:'me',text:txt,time:`${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`});
+  inp.value='';
+  renderMessages();
+  // Simulate reply
+  setTimeout(()=>{
+    chatMsgs.push({id:Date.now(),from:'other',text:'Got it! Thanks 👍',time:`${now.getHours()}:${String(now.getMinutes()+1).padStart(2,'0')}`});
+    renderMessages();
+  },1500);
+}
+
+// ══════════════════════════════════════════
+//  ANALYTICS
+// ══════════════════════════════════════════
+function renderAnalytics(){
+  const week=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const vals=[45,62,38,80,72,55,90];
+  const max=Math.max(...vals);
+
+  document.getElementById('activeChart').innerHTML=week.map((d,i)=>`
+    <div class="bar-row">
+      <div class="bar-label" style="min-width:30px">${d}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(vals[i]/max*100).toFixed(0)}%;background:linear-gradient(90deg,var(--blue),var(--cyan))"></div></div>
+      <div class="bar-val">${vals[i]}</div>
+    </div>`).join('');
+
+  const appVals=[12,18,8,25,30,15,19];
+  document.getElementById('appsChart').innerHTML=week.map((d,i)=>`
+    <div class="bar-row">
+      <div class="bar-label" style="min-width:30px">${d}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(appVals[i]/30*100).toFixed(0)}%;background:linear-gradient(90deg,var(--gold),#f7c94c)"></div></div>
+      <div class="bar-val">${appVals[i]}</div>
+    </div>`).join('');
+
+  const postVals=[8,14,6,20,15,11,15];
+  document.getElementById('postsChart').innerHTML=week.map((d,i)=>`
+    <div class="bar-row">
+      <div class="bar-label" style="min-width:30px">${d}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(postVals[i]/20*100).toFixed(0)}%;background:linear-gradient(90deg,var(--success),#2af7c2)"></div></div>
+      <div class="bar-val">${postVals[i]}</div>
+    </div>`).join('');
+
+  // Batch distribution
+  const batches=['E23','E22','E21','E20','E19','E18','E17'];
+  const bCounts=[100,100,90,90,114,71,70];
+  const bMax=114;
+  document.getElementById('analyticsMembers').innerHTML=batches.map((b,i)=>`
+    <div class="bar-row">
+      <div class="bar-label">${b}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(bCounts[i]/bMax*100).toFixed(0)}%;background:linear-gradient(90deg,var(--blue),var(--cyan))"></div></div>
+      <div class="bar-val">${bCounts[i]}</div>
+    </div>`).join('');
+
+  const features=['Feed','Jobs','Events','Research','Messaging'];
+  const fVals=[88,62,45,34,71];
+  document.getElementById('analyticsUsage').innerHTML=features.map((f,i)=>`
+    <div class="bar-row">
+      <div class="bar-label">${f}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${fVals[i]}%;background:linear-gradient(90deg,#7c3aed,var(--blue))"></div></div>
+      <div class="bar-val">${fVals[i]}%</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════
+//  PROFILE
+// ══════════════════════════════════════════
+function saveProfile(){
+  const name=document.getElementById('epName').value;
+  if(name){currentUser.name=name;updateUserUI();}
+  document.getElementById('profileEmail').textContent=document.getElementById('epEmail').value||'—';
+  document.getElementById('profileGithub').textContent=document.getElementById('epGit').value||'—';
+  document.getElementById('profileLinkedIn').textContent=document.getElementById('epLinkedIn').value||'—';
+  closeModal('editProfile');showToast('✅ Profile updated!');
+}
+
+// ══════════════════════════════════════════
+//  MODALS
+// ══════════════════════════════════════════
+function openModal(id){document.getElementById('modal-'+id).classList.add('show')}
+function closeModal(id){document.getElementById('modal-'+id).classList.remove('show')}
+document.querySelectorAll('.modal-backdrop').forEach(m=>m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('show')}));
+
+// ══════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  document.getElementById('toastMsg').textContent=msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ══════════════════════════════════════════
+//  INIT (check saved session)
+// ══════════════════════════════════════════
+window.addEventListener('load',()=>{
+  // Demo auto-login disabled – show auth page
+  // Uncomment below to skip auth for demos:
+  // currentUser={name:'Demo User',index:'E/19/001',role:'student',batch:'E19',avatar:'DU'};
+  // launchApp();
+});
+</script>
+</body>
+</html>
