@@ -699,9 +699,10 @@
         <div class="card-title">📢 CE Department News</div>
         <div class="spinner" id="newsSpinner"></div>
       </div>
-      <div id="newsList"></div>
-    </div>
-  </div>
+        <div id="newsList">
+          <div style="color:var(--muted);font-size:13px">Loading news...</div>
+        </div>
+      </div>
 
   <!-- ─── FEED ─── -->
   <div class="content" id="page-feed">
@@ -1507,12 +1508,10 @@ function submitJob(){
 // ══════════════════════════════════════════
 async function renderEvents(){
   try {
-    // Fetch real events from CE Portal API
     const resp = await fetch('https://portal.ce.pdn.ac.lk/api/events/v2/');
     const data = await resp.json();
     const ceEvents = data.data || [];
 
-    // Convert CE API format to our format
     events = ceEvents.map(e => {
       const date = new Date(e.start_at);
       return {
@@ -1520,20 +1519,24 @@ async function renderEvents(){
         title: e.title,
         day: date.getDate(),
         month: date.toLocaleString('default', { month: 'short' }),
-        time: date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        time: date.toLocaleTimeString('en-US', { 
+          hour: '2-digit', minute: '2-digit' 
+        }),
         location: e.location || 'CE Department',
-        desc: e.description.replace(/<[^>]*>/g, '').slice(0, 120) + '...',
-        rsvp: Math.floor(Math.random() * 100) + 20,
+        desc: e.description
+          ? e.description.replace(/<[^>]*>/g, '').slice(0, 150) + '...'
+          : 'CE Department Event',
+        rsvp: e.rsvpCount || 0,
         tag: e.event_type?.[0] || 'Event',
-        image: e.image || null
+        image: e.image || null,
+        link: e.link_url || null
       };
     });
 
-    // If CE API returns empty, use seed data
     if(events.length === 0) events = [...seedEvents];
 
   } catch(e) {
-    console.log('CE Events API failed, using seed data');
+    console.log('Events API failed:', e);
     events = [...seedEvents];
   }
   drawEvents();
