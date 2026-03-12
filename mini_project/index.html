@@ -1190,9 +1190,11 @@ function launchApp(){
   showToast('👋 Welcome back, '+currentUser.name+'!');
 }
 function logout(){
-  currentUser=null;
-  document.getElementById('authPage').style.display='flex';
-  document.getElementById('mainApp').style.display='none';
+  localStorage.removeItem('decp_user');
+  localStorage.removeItem('decp_token');
+  currentUser = null;
+  document.getElementById('authPage').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
 }
 function updateUserUI(){
   ['sidebarAvatar','composerAvatar','profilePic'].forEach(id=>{
@@ -1651,19 +1653,10 @@ function showToast(msg){
 //  INIT (check saved session)
 // ══════════════════════════════════════════
 window.addEventListener('load', () => {
-  const savedUser = localStorage.getItem('decp_user');
-  const savedToken = localStorage.getItem('decp_token');
-  if(savedUser && savedToken){
-    try {
-      currentUser = JSON.parse(savedUser);
-      currentUser.avatar = currentUser.name
-        .split(' ').map(w=>w[0]).join('').toUpperCase();
-      launchApp();
-    } catch(e) {
-      localStorage.removeItem('decp_user');
-      localStorage.removeItem('decp_token');
-    }
-  }
+  // Clear session on refresh — require fresh login every time
+  localStorage.removeItem('decp_user');
+  localStorage.removeItem('decp_token');
+  currentUser = null;
 });
 </script>
 </body>
