@@ -728,11 +728,17 @@
     <div class="section-header mb-18">
       <div class="section-title">Department Members</div>
       <div style="display:flex;gap:8px">
-        <select class="form-input" id="filterBatch" style="width:auto;padding:6px 12px;font-size:13px" onchange="filterMembers()">
+        <select class="form-input" id="filterBatch" 
+          style="width:auto;padding:6px 12px;font-size:13px" 
+          onchange="filterMembers()">
           <option value="">All Batches</option>
-          <option>E19</option><option>E20</option><option>E21</option>
-          <option>E22</option><option>E23</option><option>E18</option>
-          <option>E17</option><option>E16</option>
+          <option>E23</option>
+          <option>E22</option>
+          <option>E21</option>
+          <option>E20</option>
+          <option>E19</option>
+          <option>E18</option>
+          <option>E17</option>
         </select>
         <select class="form-input" id="filterRole" style="width:auto;padding:6px 12px;font-size:13px" onchange="filterMembers()">
           <option value="">All Roles</option>
@@ -1340,30 +1346,68 @@ const batchInfo={
 };
 
 async function loadMembers(){
-  const loadEl=document.getElementById('membersLoading');
-  const gridEl=document.getElementById('membersGrid');
-  
-  // Try fetching from the actual CE API
-  try{
-    const resp = await fetch('https://api.ce.pdn.ac.lk/people/v1/students/E19/',{method:'GET'});
-    if(resp.ok){
-      const data=await resp.json();
-      // If success, use real data
-      const realMembers=Object.values(data).slice(0,20).map(s=>({
-        name:s.name_with_initials||s.preferred_name||'CE Student',
-        index:s.index_no||'E/19/?',
-        batch:'E19',
-        role:'student',
-        avatar:(s.name_with_initials||'CS').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(),
-        github:s.github_username||null,
-        linkedin:s.linkedin_url||null,
-      }));
-      allMembers=[...realMembers,...generateSeedMembers()];
-    }else{allMembers=generateSeedMembers();}
-  }catch(e){allMembers=generateSeedMembers();}
-  
-  loadEl.style.display='none';
-  gridEl.style.display='grid';
+  const loadEl = document.getElementById('membersLoading');
+  const gridEl = document.getElementById('membersGrid');
+
+  // Batches to load — recent ones first
+  const batches = ['E20', 'E21', 'E22', 'E23', 'E19', 'E18', 'E17'];
+
+  try {
+    // Step 1 — fetch all batch indexes in parallel
+    const batchResults = await Promise.all(
+      batches.map(b =>
+        fetch(`https://api.ce.pdn.ac.lk/people/v1/students/${b}/`)
+          .then(r => r.json())
+          .then(data => ({ batch: b, students: data }))
+          .catch(() => ({ batch: b, students: {} }))
+      )
+    );
+
+    // Step 2 — collect all student URLs (limit per batch to avoid too many requests)
+    let allUrls = [];
+    batchResults.forEach(({ batch, students }) => {
+      const urls = Object.entries(students)
+        .slice(0, 15) // max 15 per batch for speed
+        .map(([indexNo, val]) => ({ indexNo, url: val.url, batch }));
+      allUrls = [...allUrls, ...urls];
+    });
+
+    // Step 3 — fetch individual student details in parallel
+    const studentDetails = await Promise.all(
+      allUrls.map(({ indexNo, url, batch }) =>
+        fetch(url)
+          .then(r => r.json())
+          .then(data => ({
+            name: data.name_with_initials || data.full_name || indexNo,
+            index: data.eNumber || indexNo,
+            batch: data.batch || batch,
+            email: data.emails?.faculty?.name
+              ? `${data.emails.faculty.name}@${data.emails.faculty.domain}`
+              : '',
+            image: data.profile_image || null,
+            github: data.urls?.github || '',
+            linkedin: data.urls?.linkedin || '',
+            profile: data.profile_page || '',
+            role: 'student',
+            avatar: (data.name_with_initials || indexNo)
+              .split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+          }))
+          .catch(() => null)
+      )
+    );
+
+    // Step 4 — filter out failed requests
+    allMembers = studentDetails.filter(s => s !== null);
+
+    console.log(`✅ Loaded ${allMembers.length} real members from CE API`);
+
+  } catch(e) {
+    console.log('CE API failed, using seed data');
+    allMembers = generateSeedMembers();
+  }
+
+  loadEl.style.display = 'none';
+  gridEl.style.display = 'grid';
   filterMembers();
   renderBatchBars();
 }
@@ -1378,35 +1422,53 @@ function generateSeedMembers(){
   }));
 }
 function filterMembers(){
-  const batch=document.getElementById('filterBatch').value;
-  const role=document.getElementById('filterRole').value;
-  let filtered=allMembers;
-  if(batch) filtered=filtered.filter(m=>m.batch===batch);
-  if(role) filtered=filtered.filter(m=>m.role===role);
-  document.getElementById('membersGrid').innerHTML=filtered.map(m=>`
-    <div class="member-card fade-up">
-      <div class="member-avatar">${m.avatar}</div>
-      <div class="member-name">${m.name}</div>
-      <div class="member-batch">${m.batch} · ${m.role}</div>
-      <div style="margin-top:8px">${m.role==='alumni'?'<span class="tag tag-gold">Alumni</span>':'<span class="tag tag-blue">Student</span>'}</div>
-      <button class="btn btn-outline btn-sm" style="margin-top:10px;width:100%" onclick="showToast('💬 Message sent to ${m.name}!')">Message</button>
-    </div>`).join('');
-}
-function renderBatchBars(){
-  const batches=['E19','E20','E21','E22','E23','E18','E17','E16'];
-  const counts={E19:114,E20:90,E21:90,E22:100,E23:100,E18:71,E17:70,E16:60};
-  const max=114;
-  const html=batches.map(b=>`
-    <div class="bar-row">
-      <div class="bar-label">${b}</div>
-      <div class="bar-track"><div class="bar-fill" style="width:${(counts[b]/max*100).toFixed(0)}%;background:linear-gradient(90deg,var(--blue),var(--cyan))"></div></div>
-      <div class="bar-val">${counts[b]}</div>
-    </div>`).join('');
-  const el=document.getElementById('batchBars');
-  if(el){el.innerHTML=html;}
-  document.getElementById('batchSpinner').style.display='none';
-}
+  const batch = document.getElementById('filterBatch').value;
+  const role = document.getElementById('filterRole').value;
+  let filtered = allMembers;
+  if(batch) filtered = filtered.filter(m => m.batch === batch);
+  if(role) filtered = filtered.filter(m => m.role === role);
 
+  document.getElementById('membersGrid').innerHTML = filtered.map(m => `
+    <div class="member-card fade-up">
+      ${m.image
+        ? `<img src="${m.image}" 
+             style="width:54px;height:54px;border-radius:50%;
+                    object-fit:cover;margin:0 auto 10px;display:block;
+                    border:2px solid var(--blue)"
+             onerror="this.style.display='none';
+                      this.nextElementSibling.style.display='flex'"
+           />
+           <div class="member-avatar" style="display:none">${m.avatar}</div>`
+        : `<div class="member-avatar">${m.avatar}</div>`
+      }
+      <div class="member-name">${m.name}</div>
+      <div class="member-batch">${m.batch} · ${m.index}</div>
+      <div style="margin-top:6px;display:flex;gap:4px;justify-content:center;flex-wrap:wrap">
+        <span class="tag tag-blue">${m.batch}</span>
+        <span class="tag tag-green">Student</span>
+      </div>
+      <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
+        ${m.github ? `<a href="${m.github}" target="_blank" 
+          style="color:var(--muted);font-size:11px;text-decoration:none"
+          onclick="event.stopPropagation()">GitHub</a>` : ''}
+        ${m.linkedin ? `<a href="${m.linkedin}" target="_blank"
+          style="color:var(--cyan);font-size:11px;text-decoration:none"
+          onclick="event.stopPropagation()">LinkedIn</a>` : ''}
+        ${m.profile ? `<a href="${m.profile}" target="_blank"
+          style="color:var(--gold);font-size:11px;text-decoration:none"
+          onclick="event.stopPropagation()">Profile</a>` : ''}
+      </div>
+      <button class="btn btn-outline btn-sm" 
+        style="margin-top:10px;width:100%" 
+        onclick="showToast('💬 Message sent to ${m.name}!')">
+        Message
+      </button>
+    </div>`).join('');
+
+  // Show count
+  document.querySelector('#page-members .section-title').textContent = 
+    `Department Members (${filtered.length})`;
+}
 // ══════════════════════════════════════════
 //  JOBS
 // ══════════════════════════════════════════
