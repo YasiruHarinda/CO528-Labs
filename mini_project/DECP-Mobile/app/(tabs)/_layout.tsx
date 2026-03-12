@@ -1,35 +1,68 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
-
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+    <Tabs screenOptions={{
+      tabBarStyle: {
+        backgroundColor: '#0a1628',
+        borderTopColor: '#1a2a4a',
+        borderTopWidth: 1,
+      },
+      tabBarActiveTintColor: '#00d4ff',
+      tabBarInactiveTintColor: '#4a6a8a',
+      headerStyle: { backgroundColor: '#0a1628' },
+      headerTintColor: '#00d4ff',
+      headerTitleStyle: { fontWeight: 'bold' },
+    }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: 'Feed',
+          tabBarLabel: 'Feed',
+          tabBarIcon: ({ color }) => (
+            <TabIcon icon="📰" color={color}/>
+          ),
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="jobs"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Jobs',
+          tabBarLabel: 'Jobs',
+          tabBarIcon: ({ color }) => (
+            <TabIcon icon="💼" color={color}/>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="events"
+        options={{
+          title: 'Events',
+          tabBarLabel: 'Events',
+          tabBarIcon: ({ color }) => (
+            <TabIcon icon="📅" color={color}/>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ color }) => (
+            <TabIcon icon="👤" color={color}/>
+          ),
         }}
       />
     </Tabs>
   );
 }
+
+// Simple icon component
+function TabIcon({ icon, color }: { icon: string, color: string }) {
+  return (
+    <Text style={{ fontSize: 18, color }}>{icon}</Text>
+  );
+}
+
+import { Text } from 'react-native';
