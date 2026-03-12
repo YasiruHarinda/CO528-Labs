@@ -709,12 +709,28 @@
       <div class="post-composer">
         <div style="display:flex;gap:12px;align-items:flex-start">
           <div class="avatar" id="composerAvatar" style="flex-shrink:0">?</div>
-          <textarea id="postText" placeholder="What's on your mind? Share an update, achievement, or question..."></textarea>
+          <div style="flex:1">
+            <textarea id="postText" 
+              placeholder="What's on your mind? Share an update, achievement, or question...">
+            </textarea>
+            <!-- Media Preview -->
+            <div id="mediaPreview" style="margin-top:8px"></div>
+          </div>
         </div>
+        <!-- Hidden file input -->
+        <input type="file" id="mediaInput" 
+          accept="image/*,video/*" style="display:none"
+          onchange="previewMedia(this)"/>
         <div class="post-actions">
-          <button class="media-btn">📷 Photo</button>
-          <button class="media-btn">🎥 Video</button>
-          <button class="media-btn">📎 File</button>
+          <button class="media-btn" onclick="document.getElementById('mediaInput').click()">
+            📷 Photo
+          </button>
+          <button class="media-btn" onclick="document.getElementById('mediaInput').click()">
+            🎥 Video
+          </button>
+          <button class="media-btn" onclick="showToast('📎 File sharing coming soon!')">
+            📎 File
+          </button>
           <div class="sep"></div>
           <button class="btn btn-primary btn-sm" onclick="submitPost()">Post</button>
         </div>
@@ -1005,6 +1021,9 @@ const seedMessages = [
   {id:5,from:'other',text:'Let me know if you need help',time:'10:23 AM'},
 ];
 
+
+
+
 // ══════════════════════════════════════════
 //  AUTH
 // ══════════════════════════════════════════
@@ -1293,6 +1312,43 @@ async function loadNews() {
       '<div style="color:var(--muted);font-size:13px">Could not load news.</div>';
   }
 }
+function previewMedia(input){
+  const file = input.files[0];
+  if(!file) return;
+  const preview = document.getElementById('mediaPreview');
+  const url = URL.createObjectURL(file);
+
+  if(file.type.startsWith('image/')){
+    preview.innerHTML = `
+      <div style="position:relative;display:inline-block">
+        <img src="${url}" style="max-width:100%;max-height:200px;
+          border-radius:10px;border:1px solid var(--border)"/>
+        <button onclick="clearMedia()" 
+          style="position:absolute;top:6px;right:6px;
+                 background:rgba(0,0,0,0.6);border:none;color:#fff;
+                 border-radius:50%;width:24px;height:24px;cursor:pointer;
+                 font-size:12px">✕</button>
+      </div>`;
+  } else if(file.type.startsWith('video/')){
+    preview.innerHTML = `
+      <div style="position:relative;display:inline-block">
+        <video src="${url}" controls 
+          style="max-width:100%;max-height:200px;border-radius:10px;
+                 border:1px solid var(--border)"></video>
+        <button onclick="clearMedia()"
+          style="position:absolute;top:6px;right:6px;
+                 background:rgba(0,0,0,0.6);border:none;color:#fff;
+                 border-radius:50%;width:24px;height:24px;cursor:pointer;
+                 font-size:12px">✕</button>
+      </div>`;
+  }
+  showToast('📎 Media attached!');
+}
+
+function clearMedia(){
+  document.getElementById('mediaInput').value = '';
+  document.getElementById('mediaPreview').innerHTML = '';
+}
 
 // ══════════════════════════════════════════
 //  FEED
@@ -1305,21 +1361,78 @@ function drawFeed(){
   document.getElementById('feedPosts').innerHTML=posts.map(p=>postHTML(p)).join('');
 }
 function postHTML(p){
-  return `<div class="post-card fade-up" id="post-${p.id}">
+  const commentListHTML = (p.commentList || []).map(c => `
+    <div style="display:flex;gap:8px;align-items:flex-start;
+                margin-top:8px;padding:8px;
+                background:rgba(255,255,255,0.03);border-radius:8px">
+      <div class="avatar" style="width:26px;height:26px;font-size:9px;flex-shrink:0">
+        ${c.avatar || '?'}
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600">${c.author}</div>
+        <div style="font-size:12px;color:rgba(240,244,255,0.75);margin-top:2px">
+          ${c.text}
+        </div>
+      </div>
+    </div>`).join('');
+
+  return `
+  <div class="post-card fade-up" id="post-${p.id}">
     <div class="post-header">
-      <div class="avatar" style="width:38px;height:38px;font-size:13px">${p.avatar}</div>
+      <div class="avatar" style="width:38px;height:38px;font-size:13px">
+        ${p.avatar}
+      </div>
       <div style="flex:1">
         <div style="font-size:14px;font-weight:600">${p.author}</div>
         <div style="font-size:11px;color:var(--muted)">${p.batch} · ${p.time}</div>
       </div>
     </div>
-    <div class="post-body">${p.text}</div>
+
+    ${p.text ? `<div class="post-body">${p.text}</div>` : ''}
+
+    ${p.mediaUrl && p.mediaType?.startsWith('image/') ? `
+      <img src="${p.mediaUrl}" 
+        style="width:100%;border-radius:10px;margin-top:10px;
+               max-height:300px;object-fit:cover"/>` : ''}
+
+    ${p.mediaUrl && p.mediaType?.startsWith('video/') ? `
+      <video src="${p.mediaUrl}" controls
+        style="width:100%;border-radius:10px;margin-top:10px;
+               max-height:300px"></video>` : ''}
+
     <div class="post-footer">
       <button class="react-btn ${p.liked?'liked':''}" onclick="toggleLike(${p.id})">
         ${p.liked?'❤️':'🤍'} ${p.likes}
       </button>
-      <button class="react-btn">💬 ${p.comments}</button>
-      <button class="react-btn">↗️ Share</button>
+      <button class="react-btn" onclick="toggleComments(${p.id})">
+        💬 ${p.comments}
+      </button>
+      <button class="react-btn" onclick="sharePost(${p.id})">
+        ↗️ Share
+      </button>
+    </div>
+
+    <!-- Comments section -->
+    <div id="comments-${p.id}" style="display:none;margin-top:10px;
+         border-top:1px solid var(--border);padding-top:10px">
+      ${commentListHTML}
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+        <div class="avatar" style="width:28px;height:28px;font-size:10px;flex-shrink:0">
+          ${currentUser ? currentUser.avatar : '?'}
+        </div>
+        <input type="text" 
+          id="commentInput-${p.id}"
+          placeholder="Write a comment..."
+          style="flex:1;background:rgba(255,255,255,0.05);
+                 border:1px solid var(--border);border-radius:8px;
+                 color:var(--white);font-family:'DM Sans',sans-serif;
+                 font-size:12px;padding:8px 12px;outline:none;"
+          onkeydown="if(event.key==='Enter') submitComment(${p.id})"/>
+        <button class="btn btn-primary btn-sm" 
+          onclick="submitComment(${p.id})">
+          Send
+        </button>
+      </div>
     </div>
   </div>`;
 }
@@ -1327,11 +1440,73 @@ function toggleLike(id){
   const p=posts.find(x=>x.id===id);
   if(p){p.liked=!p.liked;p.likes+=p.liked?1:-1;drawFeed();}
 }
-function submitPost(){
-  const txt=document.getElementById('postText').value.trim();
-  if(!txt)return;
-  posts.unshift({id:Date.now(),author:currentUser.name,batch:currentUser.batch,avatar:currentUser.avatar,text:txt,time:'Just now',likes:0,liked:false,comments:0});
-  document.getElementById('postText').value='';
+async function submitPost(){
+  const txt = document.getElementById('postText').value.trim();
+  const mediaInput = document.getElementById('mediaInput');
+  const mediaFile = mediaInput ? mediaInput.files[0] : null;
+  let mediaUrl = null;
+
+  if(!txt && !mediaFile){
+    showToast('❌ Write something or attach a file!');
+    return;
+  }
+
+  // If media file selected, convert to base64 for demo
+  if(mediaFile){
+    mediaUrl = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.readAsDataURL(mediaFile);
+    });
+  }
+
+  try {
+    const resp = await fetch(`${API_BASE}/api/posts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: txt,
+        authorName: currentUser.name,
+        authorBatch: currentUser.batch,
+        mediaUrl: mediaUrl,
+        mediaType: mediaFile ? mediaFile.type : null
+      })
+    });
+    const data = await resp.json();
+    posts.unshift({
+      ...data,
+      author: currentUser.name,
+      batch: currentUser.batch,
+      avatar: currentUser.avatar,
+      time: 'Just now',
+      likes: 0,
+      liked: false,
+      comments: 0,
+      commentList: [],
+      mediaUrl: mediaUrl,
+      mediaType: mediaFile ? mediaFile.type : null
+    });
+  } catch(e) {
+    // fallback — add locally
+    posts.unshift({
+      id: Date.now(),
+      author: currentUser.name,
+      batch: currentUser.batch,
+      avatar: currentUser.avatar,
+      text: txt,
+      time: 'Just now',
+      likes: 0,
+      liked: false,
+      comments: 0,
+      commentList: [],
+      mediaUrl: mediaUrl,
+      mediaType: mediaFile ? mediaFile.type : null
+    });
+  }
+
+  document.getElementById('postText').value = '';
+  if(mediaInput) mediaInput.value = '';
+  document.getElementById('mediaPreview').innerHTML = '';
   drawFeed();
   showToast('✅ Post published!');
 }
@@ -1468,6 +1643,77 @@ function filterMembers(){
   // Show count
   document.querySelector('#page-members .section-title').textContent = 
     `Department Members (${filtered.length})`;
+}
+
+function toggleComments(id){
+  const section = document.getElementById(`comments-${id}`);
+  if(section){
+    const isHidden = section.style.display === 'none';
+    section.style.display = isHidden ? 'block' : 'none';
+    if(isHidden){
+      // focus input
+      const input = document.getElementById(`commentInput-${id}`);
+      if(input) input.focus();
+    }
+  }
+}
+
+function submitComment(id){
+  const input = document.getElementById(`commentInput-${id}`);
+  if(!input || !input.value.trim()) return;
+
+  const post = posts.find(p => p.id == id);
+  if(!post) return;
+
+  if(!post.commentList) post.commentList = [];
+
+  post.commentList.push({
+    author: currentUser ? currentUser.name : 'You',
+    avatar: currentUser ? currentUser.avatar : '?',
+    text: input.value.trim(),
+    time: 'Just now'
+  });
+  post.comments = post.commentList.length;
+
+  // Save comment to backend
+  fetch(`${API_BASE}/api/posts/${id}/comment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      author: currentUser?.name,
+      text: input.value.trim()
+    })
+  }).catch(() => {}); // fail silently
+
+  drawFeed();
+
+  // Re-open comments after redraw
+  setTimeout(() => {
+    const section = document.getElementById(`comments-${id}`);
+    if(section) section.style.display = 'block';
+  }, 50);
+
+  showToast('💬 Comment added!');
+}
+
+function sharePost(id){
+  const post = posts.find(p => p.id == id);
+  if(!post) return;
+
+  // Try native share API first
+  if(navigator.share){
+    navigator.share({
+      title: `Post by ${post.author}`,
+      text: post.text,
+      url: window.location.href
+    }).catch(() => {});
+  } else {
+    // Fallback — copy to clipboard
+    const text = `${post.author}: ${post.text}`;
+    navigator.clipboard.writeText(text)
+      .then(() => showToast('🔗 Post copied to clipboard!'))
+      .catch(() => showToast('🔗 Share: ' + window.location.href));
+  }
 }
 // ══════════════════════════════════════════
 //  JOBS

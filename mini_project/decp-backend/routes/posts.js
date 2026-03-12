@@ -28,4 +28,21 @@ router.post('/:id/like', async (req, res) => {
   res.json({ success: true });
 });
 
+// POST /api/posts/:id/comment
+router.post('/:id/comment', async (req, res) => {
+  const { author, text } = req.body;
+  try {
+    await db.collection('posts').doc(req.params.id).update({
+      comments: admin.firestore.FieldValue.increment(1)
+    });
+    await db.collection('comments').add({
+      postId: req.params.id,
+      author, text,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    res.json({ success: true });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 module.exports = router;
