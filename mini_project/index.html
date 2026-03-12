@@ -1431,27 +1431,27 @@ async function renderFeed(){
   try {
     const resp = await fetch(`${API_BASE}/api/posts`);
     const data = await resp.json();
-    // merge backend posts with seed posts
+
     const backendPosts = data.map(p => ({
       id: p.id,
       author: p.authorName || 'CE Student',
       batch: p.authorBatch || '',
-      avatar: (p.authorName || 'CS').split(' ').map(w=>w[0]).join('').toUpperCase(),
-      text: p.text,
-      time: p.createdAt ? new Date(p.createdAt._seconds * 1000)
-        .toLocaleDateString('en-US', { month:'short', day:'numeric' }) : 'Recently',
+      avatar: (p.authorName || 'CS')
+        .split(' ').map(w => w[0]).join('').toUpperCase(),
+      text: p.text || '',
+      time: p.createdAt
+        ? new Date(p.createdAt._seconds * 1000)
+            .toLocaleDateString('en-US', { month:'short', day:'numeric' })
+        : 'Recently',
       likes: p.likes || 0,
       liked: false,
       comments: p.comments || 0,
       commentList: [],
-      mediaUrl: p.mediaUrl || null,
-      mediaType: p.mediaType || null
+      mediaUrl: p.mediaUrl || null,    // ← load from Firestore
+      mediaType: p.mediaType || null   // ← load from Firestore
     }));
 
-    // show backend posts first, then seed if backend empty
-    posts = backendPosts.length > 0
-      ? backendPosts
-      : [...seedPosts];
+    posts = backendPosts.length > 0 ? backendPosts : [...seedPosts];
 
   } catch(e) {
     console.log('Feed API failed, using seed data');
@@ -1460,7 +1460,7 @@ async function renderFeed(){
   drawFeed();
 }
 function drawFeed(){
-  document.getElementById('feedPosts').innerHTML=posts.map(p=>postHTML(p)).join('');
+  document.getElementById('feedPosts').innerHTML = posts.map(p => postHTML(p)).join('');
 }
 function postHTML(p){
   const commentListHTML = (p.commentList || []).map(c => `
@@ -1539,30 +1539,80 @@ function postHTML(p){
   </div>`;
 }
 function toggleLike(id){
-  const p=posts.find(x=>x.id===id);
-  if(p){p.liked=!p.liked;p.likes+=p.liked?1:-1;drawFeed();}
+  // find by both string and number id
+  const p = posts.find(x => x.id == id || x.id === id);
+  if(!p) return;
+  p.liked = !p.liked;
+  p.likes += p.liked ? 1 : -1;
+
+  // update backend
+  fetch(`${API_BASE}/api/posts/${id}/like`, { method: 'POST' }).catch(() => {});
+
+  drawFeed();
+
+  // keep comments open if they were open
+  setTimeout(() => {
+    const openComment = document.querySelector('[id^="comments-"][style*="block"]');
+    if(openComment){
+      const openId = openComment.id.replace('comments-', '');
+      const section = document.getElementById(`comments-${openId}`);
+      if(section) section.style.display = 'block';
+    }
+  }, 30);
 }
 async function submitPost(){
   const txt = document.getElementById('postText').value.trim();
   const mediaInput = document.getElementById('mediaInput');
   const mediaFile = mediaInput ? mediaInput.files[0] : null;
   let mediaUrl = null;
+  let mediaType = null;
 
   if(!txt && !mediaFile){
     showToast('❌ Write something or attach a file!');
     return;
   }
 
-  // If media file selected, convert to base64 for demo
-  if(mediaFile){
-    mediaUrl = await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = e => resolve(e.target.result);
-      reader.readAsDataURL(mediaFile);
-    });
-  }
+  const btn = document.querySelector('.post-composer .btn-primary');
+  btn.textContent = 'Posting...';
+  btn.disabled = true;
 
   try {
+    // Step 1 — upload media file first if selected
+    if(mediaFile){
+      showToast('⬆️ Uploading media...');
+
+      const formData = new FormData();
+      formData.append('file', mediaFile);
+
+      try {
+        const uploadResp = await fetch(`${API_BASE}/api/posts/upload`, {
+          method: 'POST',
+          body: formData
+        });
+        if(uploadResp.ok){
+          const uploadData = await uploadResp.json();
+          mediaUrl = uploadData.url; // Firebase Storage URL
+          mediaType = mediaFile.type;
+          showToast('✅ Media uploaded!');
+        } else {
+          throw new Error('Upload failed');
+        }
+      } catch(uploadErr) {
+        // fallback — store as base64 (small images only)
+        if(mediaFile.size < 500000){ // under 500KB only
+          mediaUrl = await new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.readAsDataURL(mediaFile);
+          });
+          mediaType = mediaFile.type;
+        } else {
+          showToast('❌ Image too large, post without photo');
+        }
+      }
+    }
+
+    // Step 2 — save post to backend (Firestore)
     const resp = await fetch(`${API_BASE}/api/posts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1570,28 +1620,16 @@ async function submitPost(){
         text: txt,
         authorName: currentUser.name,
         authorBatch: currentUser.batch,
-        mediaUrl: mediaUrl,
-        mediaType: mediaFile ? mediaFile.type : null
+        mediaUrl: mediaUrl,    // ← saved to Firestore
+        mediaType: mediaType   // ← saved to Firestore
       })
     });
-    const data = await resp.json();
+
+    const savedPost = await resp.json();
+
+    // Step 3 — add to local feed with Firebase ID
     posts.unshift({
-      ...data,
-      author: currentUser.name,
-      batch: currentUser.batch,
-      avatar: currentUser.avatar,
-      time: 'Just now',
-      likes: 0,
-      liked: false,
-      comments: 0,
-      commentList: [],
-      mediaUrl: mediaUrl,
-      mediaType: mediaFile ? mediaFile.type : null
-    });
-  } catch(e) {
-    // fallback — add locally
-    posts.unshift({
-      id: Date.now(),
+      id: savedPost.id,        // ← use Firebase ID not Date.now()
       author: currentUser.name,
       batch: currentUser.batch,
       avatar: currentUser.avatar,
@@ -1602,13 +1640,34 @@ async function submitPost(){
       comments: 0,
       commentList: [],
       mediaUrl: mediaUrl,
-      mediaType: mediaFile ? mediaFile.type : null
+      mediaType: mediaType
     });
+
+  } catch(e) {
+    console.error('Post failed:', e);
+    // local only fallback
+    posts.unshift({
+      id: 'local_' + Date.now(),
+      author: currentUser.name,
+      batch: currentUser.batch,
+      avatar: currentUser.avatar,
+      text: txt,
+      time: 'Just now',
+      likes: 0,
+      liked: false,
+      comments: 0,
+      commentList: [],
+      mediaUrl: mediaUrl,
+      mediaType: mediaType
+    });
+    showToast('⚠️ Saved locally only');
   }
 
   document.getElementById('postText').value = '';
   if(mediaInput) mediaInput.value = '';
   document.getElementById('mediaPreview').innerHTML = '';
+  btn.textContent = 'Post';
+  btn.disabled = false;
   drawFeed();
   showToast('✅ Post published!');
 }
@@ -1749,14 +1808,14 @@ function filterMembers(){
 
 function toggleComments(id){
   const section = document.getElementById(`comments-${id}`);
-  if(section){
-    const isHidden = section.style.display === 'none';
-    section.style.display = isHidden ? 'block' : 'none';
-    if(isHidden){
-      // focus input
+  if(!section) return;
+  const isHidden = section.style.display === 'none' || section.style.display === '';
+  section.style.display = isHidden ? 'block' : 'none';
+  if(isHidden){
+    setTimeout(() => {
       const input = document.getElementById(`commentInput-${id}`);
       if(input) input.focus();
-    }
+    }, 50);
   }
 }
 
@@ -1764,35 +1823,40 @@ function submitComment(id){
   const input = document.getElementById(`commentInput-${id}`);
   if(!input || !input.value.trim()) return;
 
-  const post = posts.find(p => p.id == id);
+  const commentText = input.value.trim();
+
+  // find post by any id type
+  const post = posts.find(p => p.id == id || p.id === id);
   if(!post) return;
 
   if(!post.commentList) post.commentList = [];
-
   post.commentList.push({
     author: currentUser ? currentUser.name : 'You',
     avatar: currentUser ? currentUser.avatar : '?',
-    text: input.value.trim(),
+    text: commentText,
     time: 'Just now'
   });
   post.comments = post.commentList.length;
 
-  // Save comment to backend
+  // save to backend
   fetch(`${API_BASE}/api/posts/${id}/comment`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       author: currentUser?.name,
-      text: input.value.trim()
+      text: commentText
     })
-  }).catch(() => {}); // fail silently
+  }).catch(() => {});
 
+  const commentWasOpen = true;
   drawFeed();
 
-  // Re-open comments after redraw
+  // reopen comment section after redraw
   setTimeout(() => {
     const section = document.getElementById(`comments-${id}`);
     if(section) section.style.display = 'block';
+    const newInput = document.getElementById(`commentInput-${id}`);
+    if(newInput) newInput.focus();
   }, 50);
 
   showToast('💬 Comment added!');

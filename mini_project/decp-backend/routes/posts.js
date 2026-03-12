@@ -9,15 +9,27 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/posts – Create post
+// POST /api/posts
 router.post('/', async (req, res) => {
-  const { text, authorName, authorBatch, mediaUrl } = req.body;
-  const post = {
-    text, authorName, authorBatch, mediaUrl: mediaUrl || null,
-    likes: 0, comments: 0,
-    createdAt: admin.firestore.FieldValue.serverTimestamp()
-  };
-  const doc = await db.collection('posts').add(post);
-  res.json({ id: doc.id, ...post });
+  try {
+    const { text, authorName, authorBatch, mediaUrl, mediaType } = req.body;
+    const post = {
+      text: text || '',
+      authorName: authorName || 'CE Student',
+      authorBatch: authorBatch || '',
+      mediaUrl: mediaUrl || null,    // ← save photo URL
+      mediaType: mediaType || null,  // ← save media type
+      likes: 0,
+      comments: 0,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    const doc = await db.collection('posts').add(post);
+    console.log('✅ Post saved:', doc.id, mediaUrl ? 'with media' : 'text only');
+    res.json({ id: doc.id, ...post });
+  } catch(e) {
+    console.error('❌ Post error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // POST /api/posts/:id/like
