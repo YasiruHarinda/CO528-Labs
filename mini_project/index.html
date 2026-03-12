@@ -1209,18 +1209,18 @@ async function doRegister(){
   }
 }
 function launchApp(){
-  document.getElementById('authPage').style.display='none';
-  document.getElementById('mainApp').style.display='block';
+  document.getElementById('authPage').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
   updateUserUI();
-  loadDashboard();
-  renderFeed();
-  renderJobs();
-  renderEvents();
-  renderResearch();
+  loadDashboard();      // ← loads real stats
+  renderFeed();         // ← loads real posts from Firebase
+  renderJobs();         // ← loads real jobs
+  renderEvents();       // ← loads real CE events
+  renderResearch();     // ← loads research
   renderChats();
   renderAnalytics();
   loadMembers();
-  showToast('👋 Welcome back, '+currentUser.name+'!');
+  showToast(' Welcome back, ' + currentUser.name + '!');
 }
 function logout(){
   localStorage.removeItem('decp_user');
@@ -1300,10 +1300,10 @@ async function loadDashboard(){
 
   } catch(e) {
     // fallback to static numbers
-    animateCount('statMembers', 1247);
-    animateCount('statJobs', 38);
-    animateCount('statEvents', 7);
-    animateCount('statResearch', 24);
+    animateCount('statMembers', 0);
+    animateCount('statJobs', analyticsResp.openJobs || 0);
+    animateCount('statEvents', analyticsResp.upcomingEvents || 0);
+    animateCount('statResearch', analyticsResp.researchProjects || 0);
   }
 
   // Load recent activity
@@ -1416,8 +1416,36 @@ function clearMedia(){
 // ══════════════════════════════════════════
 //  FEED
 // ══════════════════════════════════════════
-function renderFeed(){
-  posts=[...seedPosts];
+async function renderFeed(){
+  try {
+    const resp = await fetch(`${API_BASE}/api/posts`);
+    const data = await resp.json();
+    // merge backend posts with seed posts
+    const backendPosts = data.map(p => ({
+      id: p.id,
+      author: p.authorName || 'CE Student',
+      batch: p.authorBatch || '',
+      avatar: (p.authorName || 'CS').split(' ').map(w=>w[0]).join('').toUpperCase(),
+      text: p.text,
+      time: p.createdAt ? new Date(p.createdAt._seconds * 1000)
+        .toLocaleDateString('en-US', { month:'short', day:'numeric' }) : 'Recently',
+      likes: p.likes || 0,
+      liked: false,
+      comments: p.comments || 0,
+      commentList: [],
+      mediaUrl: p.mediaUrl || null,
+      mediaType: p.mediaType || null
+    }));
+
+    // show backend posts first, then seed if backend empty
+    posts = backendPosts.length > 0
+      ? backendPosts
+      : [...seedPosts];
+
+  } catch(e) {
+    console.log('Feed API failed, using seed data');
+    posts = [...seedPosts];
+  }
   drawFeed();
 }
 function drawFeed(){
@@ -1782,7 +1810,25 @@ function sharePost(id){
 //  JOBS
 // ══════════════════════════════════════════
 let currentJobFilter='all';
-function renderJobs(){jobs=[...seedJobs];drawJobs();}
+async function renderJobs(){
+  try {
+    const resp = await fetch(`${API_BASE}/api/jobs`);
+    const data = await resp.json();
+    jobs = data.length > 0 ? data.map(j => ({
+      id: j.id,
+      company: j.company || 'Company',
+      title: j.title || 'Job',
+      type: j.type || 'fulltime',
+      location: j.location || 'Sri Lanka',
+      icon: '💼',
+      desc: j.desc || j.description || '',
+      tags: j.tags || []
+    })) : [...seedJobs];
+  } catch(e) {
+    jobs = [...seedJobs];
+  }
+  drawJobs();
+}
 function filterJobs(type,tab){
   document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
   tab.classList.add('active');
