@@ -1223,11 +1223,21 @@ function launchApp(){
   showToast(' Welcome back, ' + currentUser.name + '!');
 }
 function logout(){
+  // Clear all saved session data
   localStorage.removeItem('decp_user');
   localStorage.removeItem('decp_token');
+  localStorage.removeItem('decp_lastPage');
   currentUser = null;
+
+  // Show login page
   document.getElementById('authPage').style.display = 'flex';
   document.getElementById('mainApp').style.display = 'none';
+
+  // Reset to login form
+  document.getElementById('loginForm').style.display = 'block';
+  document.getElementById('registerForm').style.display = 'none';
+  document.getElementById('loginIndex').value = '';
+  document.getElementById('loginPwd').value = '';
 }
 function updateUserUI(){
   ['sidebarAvatar','composerAvatar','profilePic'].forEach(id=>{
@@ -1249,6 +1259,7 @@ function updateUserUI(){
 // ══════════════════════════════════════════
 const pageTitles={dashboard:'Dashboard',feed:'Feed',members:'Members',jobs:'Jobs & Internships',events:'Events',research:'Research',messaging:'Messaging',analytics:'Analytics',profile:'My Profile'};
 function showPage(page){
+  localStorage.setItem('decp_lastPage', page);
   document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
@@ -2223,10 +2234,26 @@ function showToast(msg){
 //  INIT (check saved session)
 // ══════════════════════════════════════════
 window.addEventListener('load', () => {
-  // Clear session on refresh — require fresh login every time
-  localStorage.removeItem('decp_user');
-  localStorage.removeItem('decp_token');
-  currentUser = null;
+  const savedUser = localStorage.getItem('decp_user');
+  const savedToken = localStorage.getItem('decp_token');
+
+  if(savedUser && savedToken){
+    try {
+      currentUser = JSON.parse(savedUser);
+      currentUser.avatar = currentUser.name
+        .split(' ').map(w => w[0]).join('').toUpperCase();
+      // restore last visited page
+      const lastPage = localStorage.getItem('decp_lastPage') || 'dashboard';
+      launchApp();
+      setTimeout(() => showPage(lastPage), 100);
+    } catch(e) {
+      // corrupted data — clear and show login
+      localStorage.removeItem('decp_user');
+      localStorage.removeItem('decp_token');
+      localStorage.removeItem('decp_lastPage');
+    }
+  }
+  // if no saved session — login page shows by default (already visible)
 });
 </script>
 </body>
