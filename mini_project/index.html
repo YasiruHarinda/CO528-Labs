@@ -634,40 +634,48 @@
   <!-- ─── DASHBOARD ─── -->
   <div class="content active" id="page-dashboard">
     <div class="grid-4 mb-18">
-      <div class="stat-card fade-up">
-        <div class="stat-icon" style="background:rgba(26,90,255,0.15)">👥</div>
-        <div>
-          <div class="stat-val text-cyan" id="statMembers">1,247</div>
-          <div class="stat-lbl">Total Members</div>
-          <div class="stat-change up">↑ 12 this week</div>
-        </div>
-      </div>
-      <div class="stat-card fade-up" style="animation-delay:.08s">
-        <div class="stat-icon" style="background:rgba(245,166,35,0.15)">💼</div>
-        <div>
-          <div class="stat-val text-gold">38</div>
-          <div class="stat-lbl">Open Jobs</div>
-          <div class="stat-change up">↑ 5 new today</div>
-        </div>
-      </div>
-      <div class="stat-card fade-up" style="animation-delay:.16s">
-        <div class="stat-icon" style="background:rgba(0,200,150,0.15)">📅</div>
-        <div>
-          <div class="stat-val" style="color:var(--success)">7</div>
-          <div class="stat-lbl">Upcoming Events</div>
-          <div class="stat-change">Next: Apr 14</div>
-        </div>
-      </div>
-      <div class="stat-card fade-up" style="animation-delay:.24s">
-        <div class="stat-icon" style="background:rgba(255,79,106,0.15)">🔬</div>
-        <div>
-          <div class="stat-val" style="color:var(--danger)">24</div>
-          <div class="stat-lbl">Research Projects</div>
-          <div class="stat-change up">↑ 3 this month</div>
-        </div>
-      </div>
-    </div>
 
+  <div class="stat-card fade-up">
+    <div class="stat-icon" style="background:rgba(26,90,255,0.15);font-size:26px">👥</div>
+    <div style="flex:1;min-width:0">
+      <div class="stat-val text-cyan" id="statMembers" 
+           style="font-size:32px;letter-spacing:-1px">—</div>
+      <div class="stat-lbl">Total Members</div>
+      <div class="stat-change up" id="statMembersSub">Loading...</div>
+    </div>
+  </div>
+
+  <div class="stat-card fade-up" style="animation-delay:.08s">
+    <div class="stat-icon" style="background:rgba(245,166,35,0.15);font-size:26px">💼</div>
+    <div style="flex:1;min-width:0">
+      <div class="stat-val text-gold" id="statJobs"
+           style="font-size:32px;letter-spacing:-1px">—</div>
+      <div class="stat-lbl">Open Jobs</div>
+      <div class="stat-change up">Live opportunities</div>
+    </div>
+  </div>
+
+  <div class="stat-card fade-up" style="animation-delay:.16s">
+    <div class="stat-icon" style="background:rgba(0,200,150,0.15);font-size:26px">📅</div>
+    <div style="flex:1;min-width:0">
+      <div class="stat-val" style="color:var(--success);font-size:32px;
+           letter-spacing:-1px" id="statEvents">—</div>
+      <div class="stat-lbl">Upcoming Events</div>
+      <div class="stat-change" id="statEventsNext">Loading...</div>
+    </div>
+  </div>
+
+  <div class="stat-card fade-up" style="animation-delay:.24s">
+    <div class="stat-icon" style="background:rgba(255,79,106,0.15);font-size:26px">🔬</div>
+    <div style="flex:1;min-width:0">
+      <div class="stat-val" style="color:var(--danger);font-size:32px;
+           letter-spacing:-1px" id="statResearch">—</div>
+      <div class="stat-lbl">Research Projects</div>
+      <div class="stat-change up">Active collaborations</div>
+    </div>
+  </div>
+
+</div>
     <div class="grid-2" style="gap:18px">
       <!-- Recent Activity -->
       <div class="card fade-up">
@@ -1253,34 +1261,89 @@ function showPage(page){
 // ══════════════════════════════════════════
 //  DASHBOARD
 // ══════════════════════════════════════════
-function loadDashboard(){
-  // Recent activity
-  const ra=document.getElementById('recentActivity');
-  ra.innerHTML=seedPosts.slice(0,3).map(p=>`
-    <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:14px">
-      <div class="avatar" style="width:32px;height:32px;font-size:11px;flex-shrink:0">${p.avatar}</div>
-      <div>
-        <div style="font-size:12px;font-weight:500">${p.author} <span style="color:var(--muted);font-weight:400">posted an update</span></div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4">${p.text.slice(0,80)}...</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">${p.time} · ❤️ ${p.likes}</div>
-      </div>
-    </div>`).join('');
+async function loadDashboard(){
+  // Load real stats from backend + CE APIs in parallel
+  try {
+    const [analyticsResp, eventsResp, membersResp] = await Promise.all([
+      fetch(`${API_BASE}/api/analytics`).then(r => r.json()).catch(() => ({})),
+      fetch('https://portal.ce.pdn.ac.lk/api/events/v2/').then(r => r.json()).catch(() => ({ data: [] })),
+      fetch('https://api.ce.pdn.ac.lk/people/v1/students/').then(r => r.json()).catch(() => ({}))
+    ]);
 
-  // Events
-  const ue=document.getElementById('upcomingEvents');
-  ue.innerHTML=seedEvents.slice(0,3).map(e=>`
-    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
-      <div class="event-date" style="padding:8px 10px;min-width:46px">
-        <div class="day">${e.day}</div>
-        <div class="month">${e.month}</div>
-      </div>
-      <div>
-        <div style="font-size:13px;font-weight:500">${e.title}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${e.location} · ${e.rsvp} going</div>
-      </div>
-    </div>`).join('');
-    loadNews();
+    // Calculate total members from CE API batch counts
+    const totalMembers = Object.values(membersResp)
+      .reduce((sum, b) => sum + (b.count || 0), 0);
 
+    // Count upcoming events
+    const now = new Date();
+    const upcomingEvents = (eventsResp.data || [])
+      .filter(e => new Date(e.start_at) >= now).length;
+
+    // Next event date
+    const nextEvent = (eventsResp.data || [])
+      .filter(e => new Date(e.start_at) >= now)
+      .sort((a, b) => new Date(a.start_at) - new Date(b.start_at))[0];
+    const nextEventDate = nextEvent
+      ? new Date(nextEvent.start_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      : 'TBA';
+
+    // Update stat cards with real values
+    animateCount('statMembers', totalMembers || 1247);
+    animateCount('statJobs', analyticsResp.openJobs || 0);
+    animateCount('statEvents', upcomingEvents || 0);
+    animateCount('statResearch', analyticsResp.researchProjects || 0);
+
+    // Update sub labels
+    document.getElementById('statEventsNext').textContent = `Next: ${nextEventDate}`;
+    document.getElementById('statMembersSub').textContent = 
+      `Across ${Object.keys(membersResp).length} batches`;
+
+  } catch(e) {
+    // fallback to static numbers
+    animateCount('statMembers', 1247);
+    animateCount('statJobs', 38);
+    animateCount('statEvents', 7);
+    animateCount('statResearch', 24);
+  }
+
+  // Load recent activity
+  loadRecentActivity();
+
+  // Load upcoming events preview
+  loadUpcomingPreview();
+
+  // Load batch bars
+  renderBatchBars();
+
+  // Load news
+  loadNews();
+}
+
+// Animate number counting up
+function animateCount(id, target){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const duration = 1200;
+  const start = performance.now();
+  const startVal = 0;
+
+  function update(now){
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    // ease out
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.floor(startVal + (target - startVal) * eased);
+    el.textContent = formatNumber(current);
+    if(progress < 1) requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
+}
+
+// Format numbers compactly: 1247 → 1.2K
+function formatNumber(n){
+  if(n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+  if(n >= 1000) return (n/1000).toFixed(1) + 'K';
+  return n.toString();
 }
 async function loadNews() {
   try {
@@ -1914,6 +1977,117 @@ function sendMsg(){
     chatMsgs.push({id:Date.now(),from:'other',text:'Got it! Thanks 👍',time:`${now.getHours()}:${String(now.getMinutes()+1).padStart(2,'0')}`});
     renderMessages();
   },1500);
+}
+async function loadRecentActivity(){
+  try {
+    const resp = await fetch(`${API_BASE}/api/posts`);
+    const recentPosts = await resp.json();
+    const ra = document.getElementById('recentActivity');
+    if(!ra) return;
+
+    const items = recentPosts.slice(0, 3);
+    if(items.length === 0){
+      ra.innerHTML = '<div style="color:var(--muted);font-size:13px">No activity yet.</div>';
+      return;
+    }
+
+    ra.innerHTML = items.map(p => `
+      <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:14px">
+        <div class="avatar" style="width:32px;height:32px;font-size:11px;flex-shrink:0">
+          ${(p.authorName||'?')[0]}
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:500">
+            ${p.authorName || 'CE Student'}
+            <span style="color:var(--muted);font-weight:400"> posted an update</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4">
+            ${(p.text||'').slice(0, 80)}${p.text?.length > 80 ? '...' : ''}
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">
+            ❤️ ${p.likes || 0}
+          </div>
+        </div>
+      </div>`).join('');
+
+  } catch(e) {
+    // keep existing seed activity
+    const ra = document.getElementById('recentActivity');
+    if(ra) ra.innerHTML = seedPosts.slice(0,3).map(p => `
+      <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:14px">
+        <div class="avatar" style="width:32px;height:32px;font-size:11px;flex-shrink:0">
+          ${p.avatar}
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:500">${p.author}
+            <span style="color:var(--muted);font-weight:400"> posted</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4">
+            ${p.text.slice(0,80)}...
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">
+            ❤️ ${p.likes} · ${p.time}
+          </div>
+        </div>
+      </div>`).join('');
+  }
+}
+
+async function loadUpcomingPreview(){
+  try {
+    const resp = await fetch('https://portal.ce.pdn.ac.lk/api/events/v2/');
+    const data = await resp.json();
+    const now = new Date();
+
+    const upcoming = (data.data || [])
+      .filter(e => new Date(e.start_at) >= now)
+      .sort((a,b) => new Date(a.start_at) - new Date(b.start_at))
+      .slice(0, 3);
+
+    const ue = document.getElementById('upcomingEvents');
+    if(!ue) return;
+
+    if(upcoming.length === 0){
+      ue.innerHTML = '<div style="color:var(--muted);font-size:13px">No upcoming events.</div>';
+      return;
+    }
+
+    ue.innerHTML = upcoming.map(e => {
+      const date = new Date(e.start_at);
+      return `
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+          <div class="event-date" style="padding:8px 10px;min-width:46px">
+            <div class="day">${date.getDate()}</div>
+            <div class="month">
+              ${date.toLocaleString('default',{month:'short'})}
+            </div>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:500">${e.title}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">
+              📍 ${(e.location||'CE Dept').slice(0,40)}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+  } catch(e) {
+    // keep seed events preview
+    const ue = document.getElementById('upcomingEvents');
+    if(ue) ue.innerHTML = seedEvents.slice(0,3).map(e => `
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+        <div class="event-date" style="padding:8px 10px;min-width:46px">
+          <div class="day">${e.day}</div>
+          <div class="month">${e.month}</div>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:500">${e.title}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">
+            📍 ${e.location}
+          </div>
+        </div>
+      </div>`).join('');
+  }
 }
 
 // ══════════════════════════════════════════
