@@ -1054,14 +1054,66 @@ async function doLogin(){
     btn.disabled = false;
   }
 }
-function doRegister(){
-  const first = document.getElementById('regFirst').value||'Student';
-  const last = document.getElementById('regLast').value||'User';
-  const idx = document.getElementById('regIndex').value||'E/19/001';
+async function doRegister(){
+  const first = document.getElementById('regFirst').value.trim();
+  const last = document.getElementById('regLast').value.trim();
+  const idx = document.getElementById('regIndex').value.trim();
   const role = document.getElementById('regRole').value;
   const batch = document.getElementById('regBatch').value;
-  currentUser = {name:first+' '+last,index:idx,role,batch,avatar:(first[0]+last[0]).toUpperCase()};
-  launchApp();
+
+  // Validation
+  if(!first || !last || !idx){
+    alert('Please fill in all fields!');
+    return;
+  }
+
+  const btn = document.querySelector('#registerForm .btn-primary');
+  btn.textContent = 'Creating account...';
+  btn.disabled = true;
+
+  try {
+    const resp = await fetch(`${API_BASE}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: first + ' ' + last,
+        indexNo: idx,
+        batch: batch,
+        role: role,
+        email: idx.replace(/\//g, '') + '@ce.pdn.ac.lk',
+        password: document.querySelector('#registerForm input[type="password"]').value
+      })
+    });
+
+    const data = await resp.json();
+
+    if(!resp.ok){
+      alert('Registration failed: ' + (data.error || 'Try again'));
+      btn.textContent = 'Create Account →';
+      btn.disabled = false;
+      return;
+    }
+
+    // Save and login
+    localStorage.setItem('decp_token', data.token);
+    localStorage.setItem('decp_user', JSON.stringify(data.user));
+
+    currentUser = {
+      name: first + ' ' + last,
+      index: idx,
+      role: role,
+      batch: batch,
+      avatar: (first[0] + last[0]).toUpperCase()
+    };
+
+    launchApp();
+    showToast('🎉 Account created successfully!');
+
+  } catch(e) {
+    alert('Cannot connect to server!');
+    btn.textContent = 'Create Account →';
+    btn.disabled = false;
+  }
 }
 function launchApp(){
   document.getElementById('authPage').style.display='none';
@@ -1506,11 +1558,14 @@ function showToast(msg){
 // ══════════════════════════════════════════
 //  INIT (check saved session)
 // ══════════════════════════════════════════
-window.addEventListener('load',()=>{
-  // Demo auto-login disabled – show auth page
-  // Uncomment below to skip auth for demos:
-  // currentUser={name:'Demo User',index:'E/19/001',role:'student',batch:'E19',avatar:'DU'};
-  // launchApp();
+window.addEventListener('load', () => {
+  const savedUser = localStorage.getItem('decp_user');
+  const savedToken = localStorage.getItem('decp_token');
+  if(savedUser && savedToken){
+    currentUser = JSON.parse(savedUser);
+    currentUser.avatar = currentUser.name.split(' ').map(w=>w[0]).join('').toUpperCase();
+    launchApp();
+  }
 });
 </script>
 </body>
