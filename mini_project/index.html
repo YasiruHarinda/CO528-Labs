@@ -694,6 +694,13 @@
       </div>
       <div id="batchBars" class="chart-bar-wrap"></div>
     </div>
+    <div style="margin-top:18px" class="card fade-up">
+      <div class="section-header">
+        <div class="card-title">📢 CE Department News</div>
+        <div class="spinner" id="newsSpinner"></div>
+      </div>
+      <div id="newsList"></div>
+    </div>
   </div>
 
   <!-- ─── FEED ─── -->
@@ -1192,6 +1199,38 @@ function loadDashboard(){
         <div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${e.location} · ${e.rsvp} going</div>
       </div>
     </div>`).join('');
+    loadNews();
+
+}
+async function loadNews() {
+  try {
+    const resp = await fetch('https://portal.ce.pdn.ac.lk/api/news/v1/');
+    const data = await resp.json();
+    const news = data.data || [];
+
+    document.getElementById('newsSpinner').style.display = 'none';
+    document.getElementById('newsList').innerHTML = news.slice(0, 4).map(n => {
+      // Strip HTML tags from description
+      const plain = n.description.replace(/<[^>]*>/g, '').slice(0, 120);
+      return `
+        <div style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer"
+             onclick="window.open('https://portal.ce.pdn.ac.lk','_blank')">
+          <div style="font-size:13px;font-weight:600;color:var(--white);
+                      margin-bottom:4px;line-height:1.4">${n.title}</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.5">
+            ${plain}...
+          </div>
+          <div style="font-size:11px;color:var(--cyan);margin-top:6px">
+            Read more →
+          </div>
+        </div>`;
+    }).join('');
+
+  } catch(e) {
+    document.getElementById('newsSpinner').style.display = 'none';
+    document.getElementById('newsList').innerHTML = 
+      '<div style="color:var(--muted);font-size:13px">Could not load news.</div>';
+  }
 }
 
 // ══════════════════════════════════════════
