@@ -1427,6 +1427,46 @@ function clearMedia(){
 // ══════════════════════════════════════════
 //  FEED
 // ══════════════════════════════════════════
+function drawFeed(){
+  const feedEl = document.getElementById('feedPosts');
+  if(!feedEl) return;
+  feedEl.innerHTML = posts.map(p => postHTML(p)).join('');
+  initFeedListeners();
+}
+function initFeedListeners(){
+  const feedEl = document.getElementById('feedPosts');
+  if(!feedEl) return;
+
+  // Remove old listener if exists
+  feedEl.removeEventListener('click', feedClickHandler);
+  feedEl.addEventListener('click', feedClickHandler);
+  feedEl.removeEventListener('keydown', feedKeyHandler);
+  feedEl.addEventListener('keydown', feedKeyHandler);
+}
+
+function feedClickHandler(e){
+  // Find closest button with data-action
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+
+  const action = btn.dataset.action;
+  const pid = btn.dataset.pid;
+
+  if(action === 'like') toggleLike(pid);
+  else if(action === 'comment') toggleComments(pid);
+  else if(action === 'share') sharePost(pid);
+  else if(action === 'submitcomment') submitComment(pid);
+}
+
+function feedKeyHandler(e){
+  // Press Enter in comment input to submit
+  if(e.key === 'Enter'){
+    const input = e.target.closest('[data-commentpid]');
+    if(input){
+      submitComment(input.dataset.commentpid);
+    }
+  }
+}
 async function renderFeed(){
   try {
     const resp = await fetch(`${API_BASE}/api/posts`);
@@ -1459,15 +1499,15 @@ async function renderFeed(){
   }
   drawFeed();
 }
-function drawFeed(){
-  document.getElementById('feedPosts').innerHTML = posts.map(p => postHTML(p)).join('');
-}
 function postHTML(p){
+  const pid = String(p.id); // ensure string
+
   const commentListHTML = (p.commentList || []).map(c => `
     <div style="display:flex;gap:8px;align-items:flex-start;
                 margin-top:8px;padding:8px;
                 background:rgba(255,255,255,0.03);border-radius:8px">
-      <div class="avatar" style="width:26px;height:26px;font-size:9px;flex-shrink:0">
+      <div class="avatar" 
+           style="width:26px;height:26px;font-size:9px;flex-shrink:0">
         ${c.avatar || '?'}
       </div>
       <div>
@@ -1479,85 +1519,97 @@ function postHTML(p){
     </div>`).join('');
 
   return `
-  <div class="post-card fade-up" id="post-${p.id}">
+  <div class="post-card fade-up" id="post-${pid}" data-postid="${pid}">
     <div class="post-header">
       <div class="avatar" style="width:38px;height:38px;font-size:13px">
-        ${p.avatar}
+        ${p.avatar || '?'}
       </div>
       <div style="flex:1">
-        <div style="font-size:14px;font-weight:600">${p.author}</div>
-        <div style="font-size:11px;color:var(--muted)">${p.batch} · ${p.time}</div>
+        <div style="font-size:14px;font-weight:600">${p.author || 'CE Student'}</div>
+        <div style="font-size:11px;color:var(--muted)">
+          ${p.batch || ''} · ${p.time || 'Recently'}
+        </div>
       </div>
     </div>
 
     ${p.text ? `<div class="post-body">${p.text}</div>` : ''}
 
-    ${p.mediaUrl && p.mediaType?.startsWith('image/') ? `
-      <img src="${p.mediaUrl}" 
+    ${p.mediaUrl && p.mediaType && p.mediaType.startsWith('image/') ? `
+      <img src="${p.mediaUrl}"
         style="width:100%;border-radius:10px;margin-top:10px;
                max-height:300px;object-fit:cover"/>` : ''}
 
-    ${p.mediaUrl && p.mediaType?.startsWith('video/') ? `
+    ${p.mediaUrl && p.mediaType && p.mediaType.startsWith('video/') ? `
       <video src="${p.mediaUrl}" controls
         style="width:100%;border-radius:10px;margin-top:10px;
                max-height:300px"></video>` : ''}
 
     <div class="post-footer">
-      <button class="react-btn ${p.liked?'liked':''}" onclick="toggleLike(${p.id})">
-        ${p.liked?'❤️':'🤍'} ${p.likes}
+      <button class="react-btn ${p.liked ? 'liked' : ''}"
+        data-action="like" data-pid="${pid}">
+        ${p.liked ? '❤️' : '🤍'} ${p.likes || 0}
       </button>
-      <button class="react-btn" onclick="toggleComments(${p.id})">
-        💬 ${p.comments}
+      <button class="react-btn"
+        data-action="comment" data-pid="${pid}">
+        💬 ${p.comments || 0}
       </button>
-      <button class="react-btn" onclick="sharePost(${p.id})">
+      <button class="react-btn"
+        data-action="share" data-pid="${pid}">
         ↗️ Share
       </button>
     </div>
 
-    <!-- Comments section -->
-    <div id="comments-${p.id}" style="display:none;margin-top:10px;
-         border-top:1px solid var(--border);padding-top:10px">
+    <div id="comments-${pid}"
+         style="display:none;margin-top:10px;
+                border-top:1px solid var(--border);padding-top:10px">
       ${commentListHTML}
       <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-        <div class="avatar" style="width:28px;height:28px;font-size:10px;flex-shrink:0">
+        <div class="avatar"
+             style="width:28px;height:28px;font-size:10px;flex-shrink:0">
           ${currentUser ? currentUser.avatar : '?'}
         </div>
-        <input type="text" 
-          id="commentInput-${p.id}"
+        <input type="text"
+          id="commentInput-${pid}"
           placeholder="Write a comment..."
           style="flex:1;background:rgba(255,255,255,0.05);
                  border:1px solid var(--border);border-radius:8px;
                  color:var(--white);font-family:'DM Sans',sans-serif;
                  font-size:12px;padding:8px 12px;outline:none;"
-          onkeydown="if(event.key==='Enter') submitComment(${p.id})"/>
-        <button class="btn btn-primary btn-sm" 
-          onclick="submitComment(${p.id})">
+          data-commentpid="${pid}"/>
+        <button class="btn btn-primary btn-sm"
+          data-action="submitcomment" data-pid="${pid}">
           Send
         </button>
       </div>
     </div>
   </div>`;
 }
-function toggleLike(id){
-  // find by both string and number id
-  const p = posts.find(x => x.id == id || x.id === id);
+function toggleLike(pid){
+  const p = posts.find(x => String(x.id) === String(pid));
   if(!p) return;
+
   p.liked = !p.liked;
   p.likes += p.liked ? 1 : -1;
 
+  // save open comment sections before redraw
+  const openSections = [];
+  document.querySelectorAll('[id^="comments-"]').forEach(el => {
+    if(el.style.display === 'block'){
+      openSections.push(el.id.replace('comments-', ''));
+    }
+  });
+
   // update backend
-  fetch(`${API_BASE}/api/posts/${id}/like`, { method: 'POST' }).catch(() => {});
+  fetch(`${API_BASE}/api/posts/${pid}/like`, { method: 'POST' }).catch(() => {});
 
   drawFeed();
 
-  // keep comments open if they were open
+  // restore open comment sections
   setTimeout(() => {
-    const openComment = document.querySelector('[id^="comments-"][style*="block"]');
-    if(openComment){
-      const openId = openComment.id.replace('comments-', '');
-      const section = document.getElementById(`comments-${openId}`);
-      if(section) section.style.display = 'block';
-    }
+    openSections.forEach(id => {
+      const el = document.getElementById(`comments-${id}`);
+      if(el) el.style.display = 'block';
+    });
   }, 30);
 }
 async function submitPost(){
@@ -1806,27 +1858,25 @@ function filterMembers(){
     `Department Members (${filtered.length})`;
 }
 
-function toggleComments(id){
-  const section = document.getElementById(`comments-${id}`);
+function toggleComments(pid){
+  const section = document.getElementById(`comments-${pid}`);
   if(!section) return;
-  const isHidden = section.style.display === 'none' || section.style.display === '';
+  const isHidden = section.style.display !== 'block';
   section.style.display = isHidden ? 'block' : 'none';
   if(isHidden){
     setTimeout(() => {
-      const input = document.getElementById(`commentInput-${id}`);
+      const input = document.getElementById(`commentInput-${pid}`);
       if(input) input.focus();
     }, 50);
   }
 }
 
-function submitComment(id){
-  const input = document.getElementById(`commentInput-${id}`);
+function submitComment(pid){
+  const input = document.getElementById(`commentInput-${pid}`);
   if(!input || !input.value.trim()) return;
 
   const commentText = input.value.trim();
-
-  // find post by any id type
-  const post = posts.find(p => p.id == id || p.id === id);
+  const post = posts.find(p => String(p.id) === String(pid));
   if(!post) return;
 
   if(!post.commentList) post.commentList = [];
@@ -1838,8 +1888,7 @@ function submitComment(id){
   });
   post.comments = post.commentList.length;
 
-  // save to backend
-  fetch(`${API_BASE}/api/posts/${id}/comment`, {
+  fetch(`${API_BASE}/api/posts/${pid}/comment`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -1848,25 +1897,23 @@ function submitComment(id){
     })
   }).catch(() => {});
 
-  const commentWasOpen = true;
   drawFeed();
 
-  // reopen comment section after redraw
+  // reopen comment section and focus input
   setTimeout(() => {
-    const section = document.getElementById(`comments-${id}`);
+    const section = document.getElementById(`comments-${pid}`);
     if(section) section.style.display = 'block';
-    const newInput = document.getElementById(`commentInput-${id}`);
+    const newInput = document.getElementById(`commentInput-${pid}`);
     if(newInput) newInput.focus();
   }, 50);
 
   showToast('💬 Comment added!');
 }
 
-function sharePost(id){
-  const post = posts.find(p => p.id == id);
+function sharePost(pid){
+  const post = posts.find(p => String(p.id) === String(pid));
   if(!post) return;
 
-  // Try native share API first
   if(navigator.share){
     navigator.share({
       title: `Post by ${post.author}`,
@@ -1874,11 +1921,10 @@ function sharePost(id){
       url: window.location.href
     }).catch(() => {});
   } else {
-    // Fallback — copy to clipboard
     const text = `${post.author}: ${post.text}`;
     navigator.clipboard.writeText(text)
-      .then(() => showToast('🔗 Post copied to clipboard!'))
-      .catch(() => showToast('🔗 Share: ' + window.location.href));
+      .then(() => showToast('🔗 Copied to clipboard!'))
+      .catch(() => showToast('🔗 ' + window.location.href));
   }
 }
 // ══════════════════════════════════════════
