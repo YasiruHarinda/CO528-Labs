@@ -7,7 +7,7 @@
 
 ## Live Demo
 
-- **Web App:** [https://your-app.vercel.app](https://co-528-labs-oito.vercel.app/
+- **Web App:** https://co-528-labs-oito.vercel.app/
 - **Backend API:** https://co528-project.onrender.com
 
 ---
@@ -120,11 +120,10 @@ VAPID_EMAIL=mailto:your@email.com
 
 | Index No. | Name | Role |
 |-----------|------|------|
-| E/20/___ | Member 1 | Enterprise Architect |
-| E/20/___ | Member 2 | Solution Architect |
-| E/20/___ | Member 3 | Application Architect |
-| E/20/___ | Member 4 | Security & DevOps Architect |
+| E/20/089 | Edirimanna Y.H. | Enterprise Architect |
+| E/20/361 | Senadheera Y.H. | Solution Architect |
+| E/20/366 | Senevirathna A.P.B.P | Application Architect |
+| E/20/ | Member 4 | Security & DevOps Architect |
 
 ---
 
-## Module: CO528 Applied Software Architecture
