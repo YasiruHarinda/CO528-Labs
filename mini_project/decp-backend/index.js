@@ -17,6 +17,7 @@ app.use('/api/events', require('./routes/events'));
 app.use('/api/research', require('./routes/research'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/news', require('./routes/news'));
 
 // Health check
 app.get('/', (req, res) => res.json({ 
