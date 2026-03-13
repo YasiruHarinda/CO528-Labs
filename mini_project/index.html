@@ -2068,39 +2068,56 @@ function drawJobs(){
     </div>`).join('');
 }
 async function submitJob(){
-  // DEBUG — log ALL input values in modal
-  document.querySelectorAll('#jobModal input, #jobModal select, #jobModal textarea')
-    .forEach(el => console.log('Found input:', el.id, '→', el.value));
-  // Read values
-  const titleEl = document.getElementById('jobTitle');
-  const companyEl = document.getElementById('jobCompany');
-  const locationEl = document.getElementById('jobLocation');
-  const typeEl = document.getElementById('jobTypeInput');
-  const descEl = document.getElementById('jobDesc');
-  const deadlineEl = document.getElementById('jobDeadline');
-  const tagsEl = document.getElementById('jobTags');
-  const applyUrlEl = document.getElementById('jobApplyUrl');
+  // Try both naming patterns
+  const titleEl = document.getElementById('jobTitle') || 
+                  document.getElementById('jTitle') ||
+                  document.getElementById('newJobTitle');
 
-  // Debug — log what's found
-  console.log('jobTitle el:', titleEl, '→ value:', titleEl?.value);
-  console.log('jobCompany el:', companyEl, '→ value:', companyEl?.value);
+  const companyEl = document.getElementById('jobCompany') || 
+                    document.getElementById('jCompany') ||
+                    document.getElementById('newJobCompany');
+
+  const locationEl = document.getElementById('jobLocation') || 
+                     document.getElementById('jLocation');
+
+  const typeEl = document.getElementById('jobTypeInput') || 
+                 document.getElementById('jType') ||
+                 document.getElementById('jobType');
+
+  const descEl = document.getElementById('jobDesc') || 
+                 document.getElementById('jDesc');
+
+  const deadlineEl = document.getElementById('jobDeadline') || 
+                     document.getElementById('jDeadline');
+
+  const tagsEl = document.getElementById('jobTags') || 
+                 document.getElementById('jTags');
+
+  const applyUrlEl = document.getElementById('jobApplyUrl') || 
+                     document.getElementById('jApplyUrl');
+
+  console.log('Title el found:', titleEl?.id, '→', titleEl?.value);
+  console.log('Company el found:', companyEl?.id, '→', companyEl?.value);
 
   const title = titleEl?.value.trim();
   const company = companyEl?.value.trim();
 
-  if(!title || !company){
-    // Show which field is missing
-    if(!titleEl){
-      showToast('❌ Cannot find jobTitle input — check HTML id!');
-    } else if(!title){
-      showToast('❌ Please enter a job title!');
-      titleEl.focus();
-    } else if(!companyEl){
-      showToast('❌ Cannot find jobCompany input — check HTML id!');
-    } else if(!company){
-      showToast('❌ Please enter a company name!');
-      companyEl.focus();
-    }
+  if(!titleEl){
+    showToast('❌ Job title input not found! Check HTML id');
+    return;
+  }
+  if(!companyEl){
+    showToast('❌ Company input not found! Check HTML id');
+    return;
+  }
+  if(!title){
+    showToast('❌ Please enter a job title!');
+    titleEl.focus();
+    return;
+  }
+  if(!company){
+    showToast('❌ Please enter a company name!');
+    companyEl.focus();
     return;
   }
 
@@ -2113,7 +2130,8 @@ async function submitJob(){
     ? tagsEl.value.split(',').map(t => t.trim()).filter(Boolean)
     : [];
 
-  const btn = document.getElementById('submitJobBtn');
+  const btn = document.getElementById('submitJobBtn') ||
+              document.querySelector('#jobModal .btn-primary');
   if(btn){ btn.textContent = 'Posting...'; btn.disabled = true; }
 
   try {
@@ -2128,15 +2146,13 @@ async function submitJob(){
     });
 
     const saved = await resp.json();
-    console.log('Job save response:', saved);
+    console.log('✅ Job save response:', saved);
 
     if(!resp.ok){
       showToast('❌ ' + (saved.error || 'Failed to post job'));
-      if(btn){ btn.textContent = 'Post Job'; btn.disabled = false; }
       return;
     }
 
-    // Add to local list immediately
     jobs.unshift({
       id: saved.id,
       title, company, location, type,
@@ -2149,18 +2165,12 @@ async function submitJob(){
     drawJobs();
     closeModal('jobModal');
 
-    // Clear form
-    if(titleEl) titleEl.value = '';
-    if(companyEl) companyEl.value = '';
-    if(locationEl) locationEl.value = '';
-    if(descEl) descEl.value = '';
-    if(tagsEl) tagsEl.value = '';
-    if(deadlineEl) deadlineEl.value = '';
-    if(applyUrlEl) applyUrlEl.value = '';
+    // Clear all fields
+    [titleEl, companyEl, locationEl, descEl, tagsEl, deadlineEl, applyUrlEl]
+      .forEach(el => { if(el) el.value = ''; });
 
     showToast('✅ Job posted and saved to Firebase!');
 
-    // Update dashboard count
     const statJobs = document.getElementById('statJobs');
     if(statJobs){
       const current = parseInt(statJobs.textContent) || 0;
@@ -2169,11 +2179,12 @@ async function submitJob(){
 
   } catch(e) {
     console.error('submitJob error:', e);
-    showToast('❌ Cannot connect to server: ' + e.message);
+    showToast('❌ Server error: ' + e.message);
   } finally {
     if(btn){ btn.textContent = 'Post Job'; btn.disabled = false; }
   }
 }
+
 
 async function applyJob(id, btn){
   if(btn){
