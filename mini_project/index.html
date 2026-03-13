@@ -1282,70 +1282,104 @@ function showPage(page){
 //  DASHBOARD
 // ══════════════════════════════════════════
 async function loadDashboard(){
-  // Load real stats from backend + CE APIs in parallel
   try {
-    const [analyticsResp, eventsResp, membersResp] = await Promise.all([
-      fetch(`${API_BASE}/api/analytics`).then(r => r.json()).catch(() => ({})),
-      fetch('https://portal.ce.pdn.ac.lk/api/events/v2/').then(r => r.json()).catch(() => ({ data: [] })),
-      fetch('https://api.ce.pdn.ac.lk/people/v1/students/').then(r => r.json()).catch(() => ({}))
+    // Step 1 — fetch all data in parallel
+    const [analyticsResp, eventsResp, membersResp, jobsResp] = await Promise.all([
+      fetch(`${API_BASE}/api/analytics`)
+        .then(r => r.json()).catch(() => ({})),
+      fetch('https://portal.ce.pdn.ac.lk/api/events/v2/')
+        .then(r => r.json()).catch(() => ({ data: [] })),
+      fetch('https://api.ce.pdn.ac.lk/people/v1/students/')
+        .then(r => r.json()).catch(() => ({})),
+      fetch(`${API_BASE}/api/jobs`)
+        .then(r => r.json()).catch(() => [])
     ]);
 
-    // Calculate total members from CE API batch counts
-    const totalMembers = Object.values(membersResp)
-      .reduce((sum, b) => sum + (b.count || 0), 0);
+    // ── MEMBERS ──
+    // CE API returns batch list — fetch each batch count
+    const batchKeys = Object.keys(membersResp);
+    let totalMembers = 0;
+    if(batchKeys.length > 0){
+      const batchCounts = await Promise.all(
+        batchKeys.map(b =>
+          fetch(`https://api.ce.pdn.ac.lk/people/v1/students/${b}/`)
+            .then(r => r.json())
+            .then(data => Object.keys(data).length)
+            .catch(() => 0)
+        )
+      );
+      totalMembers = batchCounts.reduce((sum, n) => sum + n, 0);
+    }
 
-    // Count upcoming events
+    // ── JOBS ──
+    const openJobsCount = Array.isArray(jobsResp)
+      ? jobsResp.filter(j => j.status !== 'closed').length
+      : (analyticsResp.openJobs || analyticsResp.totalJobs || 0);
+
+    // ── EVENTS ──
+    const allEvents = eventsResp.data || [];
     const now = new Date();
-    const upcomingEvents = (eventsResp.data || [])
+    const upcomingEvents = allEvents
       .filter(e => new Date(e.start_at) >= now).length;
 
-    // Next event date
-    const nextEvent = (eventsResp.data || [])
+    // show upcoming if any, otherwise show total
+    const eventsCount = upcomingEvents > 0 ? upcomingEvents : allEvents.length;
+
+    const nextEvent = allEvents
       .filter(e => new Date(e.start_at) >= now)
       .sort((a, b) => new Date(a.start_at) - new Date(b.start_at))[0];
     const nextEventDate = nextEvent
-      ? new Date(nextEvent.start_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      : 'TBA';
+      ? new Date(nextEvent.start_at).toLocaleDateString('en-US', {
+          month: 'short', day: 'numeric'
+        })
+      : 'See Events';
 
-    // Update stat cards with real values
+    // ── RESEARCH ──
+    const researchCount = analyticsResp.researchProjects || 0;
+
+    // ── ANIMATE ALL STATS ──
     animateCount('statMembers', totalMembers || 1247);
-    // Also fetch jobs directly to get accurate count
-      const jobsResp = await fetch(`${API_BASE}/api/jobs`)
-        .then(r => r.json()).catch(() => []);
-      const openJobsCount = Array.isArray(jobsResp) 
-        ? jobsResp.filter(j => j.status !== 'closed').length 
-        : 0;
+    animateCount('statJobs', openJobsCount);
+    animateCount('statEvents', eventsCount);
+    animateCount('statResearch', researchCount);
 
-    animateCount('statJobs', openJobsCount || analyticsResp.openJobs || 0);
-    animateCount('statEvents', upcomingEvents || 0);
-    animateCount('statResearch', analyticsResp.researchProjects || 0);
+    // ── UPDATE SUB LABELS ──
+    const eventsNextEl = document.getElementById('statEventsNext');
+    if(eventsNextEl){
+      eventsNextEl.textContent = upcomingEvents > 0
+        ? `Next: ${nextEventDate}`
+        : `${eventsCount} CE events`;
+    }
 
-    // Update sub labels
-    document.getElementById('statEventsNext').textContent = `Next: ${nextEventDate}`;
-    document.getElementById('statMembersSub').textContent = 
-      `Across ${Object.keys(membersResp).length} batches`;
+    const memberSubEl = document.getElementById('statMembersSub');
+    if(memberSubEl){
+      memberSubEl.textContent = totalMembers > 0
+        ? `Across ${batchKeys.length} batches`
+        : 'CE Department';
+    }
 
   } catch(e) {
-    // fallback to static numbers
-    animateCount('statMembers', 0);
-    animateCount('statJobs', analyticsResp.openJobs || analyticsResp.totalJobs || 0);
-    animateCount('statEvents', analyticsResp.upcomingEvents || 0);
-    animateCount('statResearch', analyticsResp.researchProjects || 0);
+    console.error('Dashboard load error:', e);
+
+    // ── SAFE FALLBACK — no undefined variable errors ──
+    animateCount('statMembers', 1247);
+    animateCount('statJobs', 0);
+    animateCount('statEvents', 0);
+    animateCount('statResearch', 0);
+
+    const eventsNextEl = document.getElementById('statEventsNext');
+    if(eventsNextEl) eventsNextEl.textContent = 'Loading...';
+
+    const memberSubEl = document.getElementById('statMembersSub');
+    if(memberSubEl) memberSubEl.textContent = 'CE Department';
   }
 
-  // Load recent activity
+  // ── ALWAYS LOAD THESE regardless of stats success ──
   loadRecentActivity();
-
-  // Load upcoming events preview
   loadUpcomingPreview();
-
-  // Load batch bars
   renderBatchBars();
-
-  // Load news
   loadNews();
 }
-
 // Animate number counting up
 function animateCount(id, target){
   const el = document.getElementById(id);
