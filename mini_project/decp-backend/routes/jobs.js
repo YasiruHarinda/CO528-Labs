@@ -1,12 +1,5 @@
 const router = require('express').Router();
 const { db, admin } = require('../firebase');
-const doc = await db.collection('jobs').add(job);
-
-sendNotificationToAll({
-  title: `💼 New Job: ${title}`,
-  body: `${company} · ${location}`,
-  url: '/'
-}).catch(() => {});
 
 // GET /api/jobs
 router.get('/', async (req, res) => {
@@ -28,10 +21,8 @@ router.get('/', async (req, res) => {
 // POST /api/jobs
 router.post('/', async (req, res) => {
   try {
-    const { 
-      title, company, location, type, 
-      desc, tags, deadline, applyUrl 
-    } = req.body;
+    const { title, company, location, type, 
+            desc, tags, deadline, applyUrl, postedBy } = req.body;
 
     if(!title || !company){
       return res.status(400).json({ 
@@ -50,12 +41,25 @@ router.post('/', async (req, res) => {
       applyUrl: applyUrl || '',
       applications: 0,
       status: 'open',
-      postedBy: req.body.postedBy || 'Alumni',
+      postedBy: postedBy || 'Alumni',
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
     const doc = await db.collection('jobs').add(job);
     console.log('✅ Job saved:', doc.id, title);
+
+    // Send notification — wrapped in try so it never breaks job saving
+    try {
+      const { sendNotificationToAll } = require('../utils/notify');
+      sendNotificationToAll({
+        title: `💼 New Job: ${title}`,
+        body: `${company} · ${location}`,
+        url: '/'
+      });
+    } catch(notifErr) {
+      console.log('Notification skipped:', notifErr.message);
+    }
+
     res.json({ id: doc.id, ...job });
 
   } catch(e) {
