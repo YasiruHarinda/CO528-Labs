@@ -1300,7 +1300,14 @@ async function loadDashboard(){
 
     // Update stat cards with real values
     animateCount('statMembers', totalMembers || 1247);
-    animateCount('statJobs', analyticsResp.openJobs || 0);
+    // Also fetch jobs directly to get accurate count
+      const jobsResp = await fetch(`${API_BASE}/api/jobs`)
+        .then(r => r.json()).catch(() => []);
+      const openJobsCount = Array.isArray(jobsResp) 
+        ? jobsResp.filter(j => j.status !== 'closed').length 
+        : 0;
+
+    animateCount('statJobs', openJobsCount || analyticsResp.openJobs || 0);
     animateCount('statEvents', upcomingEvents || 0);
     animateCount('statResearch', analyticsResp.researchProjects || 0);
 
@@ -1312,7 +1319,7 @@ async function loadDashboard(){
   } catch(e) {
     // fallback to static numbers
     animateCount('statMembers', 0);
-    animateCount('statJobs', analyticsResp.openJobs || 0);
+    animateCount('statJobs', analyticsResp.openJobs || analyticsResp.totalJobs || 0);
     animateCount('statEvents', analyticsResp.upcomingEvents || 0);
     animateCount('statResearch', analyticsResp.researchProjects || 0);
   }
@@ -1957,6 +1964,7 @@ async function renderJobs(){
   try {
     const resp = await fetch(`${API_BASE}/api/jobs`);
     const data = await resp.json();
+
     jobs = data.length > 0 ? data.map(j => ({
       id: j.id,
       company: j.company || 'Company',
@@ -1965,9 +1973,15 @@ async function renderJobs(){
       location: j.location || 'Sri Lanka',
       icon: '💼',
       desc: j.desc || j.description || '',
-      tags: j.tags || []
+      tags: j.tags || [],
+      applications: j.applications || 0,
+      deadline: j.deadline || '',
+      applyUrl: j.applyUrl || '',
+      status: j.status || 'open'
     })) : [...seedJobs];
+
   } catch(e) {
+    console.log('Jobs API failed, using seed');
     jobs = [...seedJobs];
   }
   drawJobs();
@@ -1978,28 +1992,178 @@ function filterJobs(type,tab){
   currentJobFilter=type;drawJobs();
 }
 function drawJobs(){
-  const list=currentJobFilter==='all'?jobs:jobs.filter(j=>j.type===currentJobFilter);
-  document.getElementById('jobsList').innerHTML=list.map(j=>`
-    <div class="job-card">
-      <div class="job-logo">${j.icon}</div>
-      <div class="job-info">
-        <div class="job-title">${j.title}</div>
-        <div class="job-company">${j.company} · ${j.location}</div>
-        <div class="job-meta">
-          <span class="tag ${j.type==='internship'?'tag-gold':j.type==='remote'?'tag-green':'tag-blue'}">${j.type}</span>
-          ${j.tags.map(t=>`<span style="font-size:11px;color:var(--muted)">${t}</span>`).join(' · ')}
+  const list = document.getElementById('jobsList');
+  if(!list) return;
+
+  const filtered = jobs.filter(j => {
+    const search = (document.getElementById('jobSearch')?.value || '')
+      .toLowerCase();
+    const type = document.getElementById('jobType')?.value || '';
+    const matchSearch = !search || 
+      j.title.toLowerCase().includes(search) || 
+      j.company.toLowerCase().includes(search);
+    const matchType = !type || j.type === type;
+    return matchSearch && matchType;
+  });
+
+  if(filtered.length === 0){
+    list.innerHTML = `
+      <div style="text-align:center;padding:60px 20px;color:var(--muted)">
+        <div style="font-size:40px;margin-bottom:12px">💼</div>
+        <div style="font-size:15px;margin-bottom:6px">No jobs found</div>
+        <div style="font-size:13px">Be the first to post a job opportunity!</div>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(j => `
+    <div class="job-card fade-up" id="job-${j.id}">
+      <div style="display:flex;justify-content:space-between;
+                  align-items:flex-start;gap:12px">
+        <div style="display:flex;gap:12px;align-items:center;flex:1">
+          <div style="width:44px;height:44px;border-radius:12px;
+                      background:rgba(26,90,255,0.15);display:flex;
+                      align-items:center;justify-content:center;
+                      font-size:22px;flex-shrink:0">${j.icon || '💼'}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:15px;font-weight:700;
+                        color:var(--white)">${j.title}</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:2px">
+              ${j.company} · 📍 ${j.location}
+            </div>
+          </div>
         </div>
-        <div style="font-size:12px;color:var(--muted);margin-top:6px">${j.desc}</div>
+        <span class="tag ${j.type==='internship'?'tag-green':'tag-blue'}" 
+              style="flex-shrink:0;font-size:11px">
+          ${j.type || 'fulltime'}
+        </span>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="showToast('📨 Applied to ${j.title} at ${j.company}!')">Apply</button>
+
+      ${j.desc ? `
+        <div style="font-size:13px;color:rgba(240,244,255,0.7);
+                    margin-top:12px;line-height:1.6">
+          ${j.desc.slice(0, 150)}${j.desc.length > 150 ? '...' : ''}
+        </div>` : ''}
+
+      ${j.tags && j.tags.length > 0 ? `
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+          ${j.tags.map(t => `
+            <span class="tag tag-outline" style="font-size:11px">${t}</span>
+          `).join('')}
+        </div>` : ''}
+
+      <div style="display:flex;justify-content:space-between;
+                  align-items:center;margin-top:14px">
+        <div style="font-size:12px;color:var(--muted)">
+          👥 ${j.applications || 0} applicants
+          ${j.deadline ? ` · ⏰ Deadline: ${j.deadline}` : ''}
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline btn-sm" 
+            onclick="saveJob('${j.id}')">🔖 Save</button>
+          <button class="btn btn-primary btn-sm"
+            onclick="applyJob('${j.id}', this)">Apply Now</button>
+        </div>
+      </div>
     </div>`).join('');
 }
-function submitJob(){
-  const j={id:Date.now(),title:document.getElementById('jTitle').value,company:document.getElementById('jCompany').value,type:document.getElementById('jType').value,location:document.getElementById('jLocation').value,icon:'💼',desc:document.getElementById('jDesc').value,tags:[]};
-  if(!j.title||!j.company)return;
-  jobs.unshift(j);drawJobs();closeModal('addJob');showToast('✅ Job posted!');
-}
+async function submitJob(){
+  const title = document.getElementById('jobTitle')?.value.trim();
+  const company = document.getElementById('jobCompany')?.value.trim();
+  const location = document.getElementById('jobLocation')?.value.trim();
+  const type = document.getElementById('jobTypeInput')?.value || 'fulltime';
+  const desc = document.getElementById('jobDesc')?.value.trim();
+  const deadline = document.getElementById('jobDeadline')?.value || '';
+  const tags = (document.getElementById('jobTags')?.value || '')
+    .split(',').map(t => t.trim()).filter(Boolean);
 
+  if(!title || !company){
+    showToast('❌ Title and company are required!');
+    return;
+  }
+
+  const btn = document.querySelector('#jobModal .btn-primary');
+  if(btn){ btn.textContent = 'Posting...'; btn.disabled = true; }
+
+  try {
+    const resp = await fetch(`${API_BASE}/api/jobs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title, company, location, type,
+        desc, deadline, tags,
+        postedBy: currentUser?.name || 'Alumni'
+      })
+    });
+
+    const saved = await resp.json();
+
+    if(!resp.ok){
+      showToast('❌ ' + (saved.error || 'Failed to post job'));
+      return;
+    }
+
+    // Add to local list immediately
+    jobs.unshift({
+      id: saved.id,
+      title, company,
+      location: location || 'Sri Lanka',
+      type, desc, tags,
+      deadline,
+      applications: 0,
+      status: 'open',
+      icon: '💼'
+    });
+
+    drawJobs();
+    closeModal('jobModal');
+    showToast('✅ Job posted successfully!');
+
+    // Update dashboard job count
+    const statJobs = document.getElementById('statJobs');
+    if(statJobs){
+      const current = parseInt(statJobs.textContent) || 0;
+      statJobs.textContent = current + 1;
+    }
+
+  } catch(e) {
+    showToast('❌ Cannot connect to server');
+  } finally {
+    if(btn){ btn.textContent = 'Post Job'; btn.disabled = false; }
+  }
+}
+async function applyJob(id, btn){
+  if(btn){
+    btn.textContent = 'Applying...';
+    btn.disabled = true;
+  }
+
+  try {
+    await fetch(`${API_BASE}/api/jobs/${id}/apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: currentUser?.name || 'Anonymous',
+        indexNo: currentUser?.index || ''
+      })
+    });
+
+    // Update local count
+    const job = jobs.find(j => String(j.id) === String(id));
+    if(job) job.applications = (job.applications || 0) + 1;
+
+    if(btn){
+      btn.textContent = '✅ Applied!';
+      btn.style.background = 'var(--success)';
+      btn.disabled = true;
+    }
+    showToast('✅ Application submitted!');
+
+  } catch(e) {
+    if(btn){ btn.textContent = 'Apply Now'; btn.disabled = false; }
+    showToast('❌ Failed to apply');
+  }
+}
 // ══════════════════════════════════════════
 //  EVENTS
 // ══════════════════════════════════════════
