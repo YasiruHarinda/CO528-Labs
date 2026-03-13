@@ -1,127 +1,170 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TextInput, 
-         TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import React, { useRef, useState } from 'react';
+import {
+  View, Text, StyleSheet, ActivityIndicator,
+  TouchableOpacity, SafeAreaView, BackHandler, Platform
+} from 'react-native';
+import { WebView } from 'react-native-webview';
+import { useFocusEffect } from 'expo-router';
 
-const API = 'https://decp-backend-xxxx.onrender.com'; // ← your Render URL
+const WEB_URL = 'https://www.google.com'; // ← your Vercel URL
 
-export default function FeedScreen() {
-  const [posts, setPosts] = useState<any[]>([]);
-  const [newPost, setNewPost] = useState('');
-  const [refreshing, setRefreshing] = useState(false);
+export default function App() {
+  const webviewRef = useRef<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [canGoBack, setCanGoBack] = useState(false);
 
-  const loadPosts = async () => {
-    try {
-      const resp = await fetch(`${API}/api/posts`);
-      const data = await resp.json();
-      setPosts(Array.isArray(data) ? data : []);
-    } catch(e) {
-      console.log('Failed to load posts');
-    }
-  };
+  // Android back button
+  useFocusEffect(
+    React.useCallback(() => {
+      if(Platform.OS !== 'android') return;
+      const onBack = () => {
+        if(canGoBack && webviewRef.current){
+          webviewRef.current.goBack();
+          return true;
+        }
+        return false;
+      };
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBack);
+      return () => subscription.remove();
+    }, [canGoBack])
+  );
 
-  useEffect(() => { loadPosts(); }, []);
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadPosts();
-    setRefreshing(false);
-  };
-
-  const submitPost = async () => {
-    if(!newPost.trim()) return;
-    try {
-      await fetch(`${API}/api/posts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: newPost,
-          authorName: 'CE Student',
-          authorBatch: 'E20'
-        })
-      });
-      setNewPost('');
-      loadPosts();
-    } catch(e) {}
-  };
+  // Error screen
+  if(error){
+    return (
+      <SafeAreaView style={styles.center}>
+        <Text style={{ fontSize: 48, marginBottom: 16 }}>📡</Text>
+        <Text style={styles.errorTitle}>Connection Error</Text>
+        <Text style={styles.errorMsg}>
+          Could not load DECP.{'\n'}Check your internet connection.
+        </Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => {
+          setError(false);
+          setLoading(true);
+        }}>
+          <Text style={styles.retryText}>🔄 Try Again</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {/* Post composer */}
-      <View style={styles.composer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Share an update..."
-          placeholderTextColor="#4a6a8a"
-          value={newPost}
-          onChangeText={setNewPost}
-          multiline
-        />
-        <TouchableOpacity style={styles.postBtn} onPress={submitPost}>
-          <Text style={styles.postBtnText}>Post</Text>
-        </TouchableOpacity>
-      </View>
 
-      {/* Posts list */}
-      <FlatList
-        data={posts}
-        keyExtractor={(item, index) => item.id || String(index)}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh}
-            tintColor="#00d4ff"/>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {item.authorName?.[0] || '?'}
-                </Text>
-              </View>
-              <View>
-                <Text style={styles.author}>
-                  {item.authorName || 'CE Student'}
-                </Text>
-                <Text style={styles.batch}>
-                  {item.authorBatch || ''}
-                </Text>
-              </View>
-            </View>
-            <Text style={styles.postText}>{item.text}</Text>
-            <Text style={styles.meta}>
-              ❤️ {item.likes || 0}  💬 {item.comments || 0}
-            </Text>
-          </View>
-        )}
-        ListEmptyComponent={
-          <Text style={styles.empty}>
-            No posts yet. Be the first to post!
-          </Text>
-        }
+      {/* WebView — always rendered, never unmounts */}
+      <WebView
+        ref={webviewRef}
+        source={{ uri: WEB_URL }}
+        style={styles.webview}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        allowsInlineMediaPlayback={true}
+        allowsBackForwardNavigationGestures={true}
+        onLoadStart={() => setLoading(true)}
+        onLoadEnd={() => setLoading(false)}    
+        onError={() => { setLoading(false); setError(true); }}
+        onHttpError={() => { setLoading(false); setError(true); }}
+        onNavigationStateChange={state => setCanGoBack(state.canGoBack)}
       />
+
+      {/* Loading overlay — sits ON TOP of webview, removed when done */}
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <Text style={styles.logo}>DECP</Text>
+          <Text style={styles.subtitle}>
+            Department Engagement & Career Platform
+          </Text>
+          <Text style={styles.uni}>
+            University of Peradeniya · CE
+          </Text>
+          <ActivityIndicator
+            size="large"
+            color="#00d4ff"
+            style={{ marginTop: 48 }}
+          />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      )}
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a1628' },
-  composer: { flexDirection: 'row', margin: 12, gap: 8, alignItems: 'flex-end' },
-  input: { flex: 1, backgroundColor: '#0f1e38', color: '#fff',
-           borderRadius: 10, padding: 12, fontSize: 13,
-           borderWidth: 1, borderColor: '#1a2a4a', minHeight: 50 },
-  postBtn: { backgroundColor: '#1a5aff', borderRadius: 10,
-             padding: 12, paddingHorizontal: 16 },
-  postBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 13 },
-  card: { margin: 12, marginTop: 4, padding: 16, backgroundColor: '#0f1e38',
-          borderRadius: 14, borderWidth: 1, borderColor: '#1a2a4a' },
-  cardHeader: { flexDirection: 'row', alignItems: 'center',
-                marginBottom: 10, gap: 10 },
-  avatar: { width: 36, height: 36, borderRadius: 18,
-            backgroundColor: '#1a5aff', alignItems: 'center',
-            justifyContent: 'center' },
-  avatarText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
-  author: { color: '#fff', fontWeight: '600', fontSize: 14 },
-  batch: { color: '#4a6a8a', fontSize: 11, marginTop: 2 },
-  postText: { color: '#ccc', lineHeight: 22, fontSize: 13 },
-  meta: { color: '#4a6a8a', marginTop: 10, fontSize: 12 },
-  empty: { color: '#4a6a8a', textAlign: 'center', marginTop: 60, fontSize: 14 },
+  container: {
+    flex: 1,
+    backgroundColor: '#0a1628'
+  },
+  webview: {
+    flex: 1,
+    backgroundColor: '#0a1628'
+  },
+
+  // Loading overlay on top of webview
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject, // covers entire screen
+    backgroundColor: '#0a1628',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 999,
+    padding: 40
+  },
+  logo: {
+    fontSize: 56,
+    fontWeight: '900',
+    color: '#00d4ff',
+    letterSpacing: 6,
+    marginBottom: 14
+  },
+  subtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.6)',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 6
+  },
+  uni: {
+    fontSize: 11,
+    color: '#4a6a8a',
+    textAlign: 'center'
+  },
+  loadingText: {
+    color: '#4a6a8a',
+    fontSize: 12,
+    marginTop: 14
+  },
+
+  // Error screen
+  center: {
+    flex: 1,
+    backgroundColor: '#0a1628',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 10
+  },
+  errorMsg: {
+    fontSize: 14,
+    color: '#4a6a8a',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 30
+  },
+  retryBtn: {
+    backgroundColor: '#1a5aff',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 12
+  },
+  retryText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15
+  }
 });

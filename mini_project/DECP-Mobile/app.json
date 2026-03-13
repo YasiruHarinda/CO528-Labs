@@ -4,30 +4,32 @@
     "slug": "decp-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0a1628"
+      "backgroundColor": "#0a1628",
+      "resizeMode": "contain"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.uop.ce.decp"
+      "bundleIdentifier": "com.uop.ce.decp",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0a1628"
       },
-      "package": "com.uop.ce.decp"
+      "package": "com.uop.ce.decp",
+      "usesCleartextTraffic": true
     },
     "web": {
-      "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-    "extra": {
-      "apiUrl": "http://192.168.1.5:3000"
-    }
+    "plugins": [
+      "expo-router"
+    ]
   }
 }
