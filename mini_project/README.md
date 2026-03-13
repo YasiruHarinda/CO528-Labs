@@ -1,14 +1,14 @@
 # DECP — Department Engagement & Career Platform
 
-> CO528 Applied Software Architecture — Mini Project  
+> CO528 Applied Software Architecture  Mini Project  
 > Department of Computer Engineering, University of Peradeniya
 
 ---
 
 ## Live Demo
 
-- **Web App:** https://your-app.vercel.app
-- **Backend API:** https://your-backend.onrender.com
+- **Web App:** [https://your-app.vercel.app](https://co-528-labs-oito.vercel.app/
+- **Backend API:** https://co528-project.onrender.com
 
 ---
 
