@@ -1,20 +1,31 @@
 const router = require('express').Router();
 const { db, admin } = require('../firebase');
+const axios = require('axios');
 
+// GET /api/events — proxy CE portal (avoids CORS) + fallback to Firestore
 router.get('/', async (req, res) => {
-  const snapshot = await db.collection('events').orderBy('date', 'asc').get();
-  res.json(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+  try {
+    const response = await axios.get('https://portal.ce.pdn.ac.lk/api/events/v2/');
+    res.json(response.data);
+  } catch (err) {
+    // CE API failed — return events from Firestore instead
+    const snap = await db.collection('events').orderBy('createdAt','desc').get();
+    const events = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    res.json(events);
+  }
 });
 
+// POST /api/events — save new event
 router.post('/', async (req, res) => {
-  const event = { ...req.body, rsvpCount: 0, createdAt: admin.firestore.FieldValue.serverTimestamp() };
-  const doc = await db.collection('events').add(event);
-  res.json({ id: doc.id, ...event });
-});
-
-router.post('/:id/rsvp', async (req, res) => {
-  await db.collection('events').doc(req.params.id).update({ rsvpCount: admin.firestore.FieldValue.increment(1) });
-  res.json({ success: true });
+  try {
+    const doc = await db.collection('events').add({
+      ...req.body,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    res.json({ id: doc.id, ...req.body });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 module.exports = router;

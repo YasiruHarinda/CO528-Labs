@@ -1473,7 +1473,10 @@ function clearMedia(){
   document.getElementById('mediaInput').value = '';
   document.getElementById('mediaPreview').innerHTML = '';
 }
-
+function renderBatchBars(data) {
+  // placeholder - batch stats shown in dashboard cards
+  console.log('Batch data:', data);
+}
 // ══════════════════════════════════════════
 //  FEED
 // ══════════════════════════════════════════
@@ -2379,7 +2382,7 @@ async function applyJob(id, btn){
 async function renderEvents(){
   try {
     // Fetch real events from CE Portal API
-    const resp = await fetch('https://portal.ce.pdn.ac.lk/api/events/v2/');
+    const resp = await fetch(`${API_BASE}/api/events`);;
     const data = await resp.json();
     const ceEvents = data.data || [];
 
@@ -2597,7 +2600,7 @@ async function loadRecentActivity(){
 
 async function loadUpcomingPreview(){
   try {
-    const resp = await fetch('https://portal.ce.pdn.ac.lk/api/events/v2/');
+    const resp = await fetch(`${API_BASE}/api/events`);
     const data = await resp.json();
     const now = new Date();
 
@@ -2720,7 +2723,10 @@ function saveProfile(){
 //  MODALS
 // ══════════════════════════════════════════
 function openModal(id){document.getElementById('modal-'+id).classList.add('show')}
-function closeModal(id){document.getElementById('modal-'+id).classList.remove('show')}
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('active');
+}
 document.querySelectorAll('.modal-backdrop').forEach(m=>m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('show')}));
 
 // ══════════════════════════════════════════

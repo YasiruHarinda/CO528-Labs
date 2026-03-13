@@ -2,6 +2,7 @@ const router = require('express').Router();
 const { db, admin } = require('../firebase');
 const { sendNotificationToAll } = require('../utils/notify')
 
+admin.firestore.FieldValue.increment(1) 
 // GET /api/posts – Get all posts
 router.get('/', async (req, res) => {
   const snapshot = await db.collection('posts').orderBy('createdAt', 'desc').limit(20).get();
