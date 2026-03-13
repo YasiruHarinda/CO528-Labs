@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const { db, admin } = require('../firebase');
+const { sendNotificationToAll } = require('../utils/notify')
 
 // GET /api/posts – Get all posts
 router.get('/', async (req, res) => {
@@ -25,6 +26,12 @@ router.post('/', async (req, res) => {
     };
     const doc = await db.collection('posts').add(post);
     console.log('✅ Post saved:', doc.id, mediaUrl ? 'with media' : 'text only');
+    // Send notification to all subscribers
+    sendNotificationToAll({
+      title: `📰 New post by ${authorName}`,
+      body: text.slice(0, 80),
+      url: '/'
+    }).catch(() => {}); 
     res.json({ id: doc.id, ...post });
   } catch(e) {
     console.error('❌ Post error:', e.message);

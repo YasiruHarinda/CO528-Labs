@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Register service worker -->
+<script>
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('✅ SW registered'))
+      .catch(err => console.log('SW error:', err));
+  }
+</script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>DECP – Dept. Engagement & Career Platform | UoP CE</title>
@@ -1221,6 +1229,7 @@ function launchApp(){
   renderAnalytics();
   loadMembers();
   showToast(' Welcome back, ' + currentUser.name + '!');
+  setTimeout(() => setupNotifications(), 2000);
 }
 function logout(){
   // Clear all saved session data
@@ -1722,6 +1731,118 @@ async function submitPost(){
   showToast('✅ Post published!');
 }
 
+
+// ── PUSH NOTIFICATIONS ──
+let vapidPublicKey = null;
+
+async function setupNotifications(){
+  if(!('Notification' in window) || !('serviceWorker' in navigator)){
+    console.log('Push not supported');
+    return;
+  }
+
+  // Get VAPID public key from backend
+  try {
+    const resp = await fetch(`${API_BASE}/api/notifications/vapidkey`);
+    const data = await resp.json();
+    vapidPublicKey = data.publicKey;
+  } catch(e) {
+    console.log('Could not get VAPID key');
+    return;
+  }
+
+  // Check current permission
+  if(Notification.permission === 'granted'){
+    await subscribeUser();
+  } else if(Notification.permission !== 'denied'){
+    showNotificationPrompt();
+  }
+}
+
+function showNotificationPrompt(){
+  // Show a friendly prompt instead of browser default
+  const prompt = document.createElement('div');
+  prompt.id = 'notifPrompt';
+  prompt.style.cssText = `
+    position:fixed;bottom:80px;right:20px;
+    background:var(--card);border:1px solid var(--blue);
+    border-radius:16px;padding:16px 20px;
+    max-width:300px;z-index:9999;
+    box-shadow:0 8px 32px rgba(0,0,0,0.4)`;
+  prompt.innerHTML = `
+    <div style="font-size:22px;margin-bottom:8px">🔔</div>
+    <div style="font-weight:600;margin-bottom:4px;font-size:14px">
+      Enable Notifications
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;
+                line-height:1.5">
+      Get notified about new jobs, events and posts from CE Department
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary btn-sm" style="flex:1"
+        onclick="requestNotificationPermission()">
+        Allow
+      </button>
+      <button class="btn btn-outline btn-sm"
+        onclick="document.getElementById('notifPrompt').remove()">
+        Later
+      </button>
+    </div>`;
+  document.body.appendChild(prompt);
+}
+
+async function requestNotificationPermission(){
+  document.getElementById('notifPrompt')?.remove();
+  
+  const permission = await Notification.requestPermission();
+  
+  if(permission === 'granted'){
+    await subscribeUser();
+    showToast('🔔 Notifications enabled!');
+  } else {
+    showToast('❌ Notifications blocked');
+  }
+}
+
+async function subscribeUser(){
+  try {
+    const reg = await navigator.serviceWorker.ready;
+
+    // Convert VAPID key
+    const key = vapidPublicKey;
+    const applicationServerKey = urlBase64ToUint8Array(key);
+
+    const subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey
+    });
+
+    // Save to backend
+    await fetch(`${API_BASE}/api/notifications/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subscription,
+        userId: currentUser?.index || 'anonymous',
+        userName: currentUser?.name || 'Unknown'
+      })
+    });
+
+    console.log('✅ Push subscription saved');
+
+  } catch(e) {
+    console.error('Subscribe failed:', e);
+  }
+}
+
+// Helper — convert VAPID key
+function urlBase64ToUint8Array(base64String){
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
 // ══════════════════════════════════════════
 //  MEMBERS (API)
 // ══════════════════════════════════════════

@@ -9,6 +9,7 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/posts', require('./routes/posts'));
+app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/events', require('./routes/events'));
 app.use('/api/research', require('./routes/research'));

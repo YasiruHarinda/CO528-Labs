@@ -1,5 +1,12 @@
 const router = require('express').Router();
 const { db, admin } = require('../firebase');
+const doc = await db.collection('jobs').add(job);
+
+sendNotificationToAll({
+  title: `💼 New Job: ${title}`,
+  body: `${company} · ${location}`,
+  url: '/'
+}).catch(() => {});
 
 // GET /api/jobs
 router.get('/', async (req, res) => {
