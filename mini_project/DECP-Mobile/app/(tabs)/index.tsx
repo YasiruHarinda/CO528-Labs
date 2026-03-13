@@ -6,7 +6,7 @@ import {
 import { WebView } from 'react-native-webview';
 import { useFocusEffect } from 'expo-router';
 
-const WEB_URL = 'https://www.google.com'; // ← your Vercel URL
+const WEB_URL = 'https://co-528-labs-oito.vercel.app'; 
 
 export default function App() {
   const webviewRef = useRef<any>(null);
