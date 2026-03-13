@@ -2179,7 +2179,7 @@ async function submitJob(){
 
   } catch(e) {
     console.error('submitJob error:', e);
-    showToast('❌ Server error: ' + e.message);
+    showToast('' + e.message);
   } finally {
     if(btn){ btn.textContent = 'Post Job'; btn.disabled = false; }
   }
