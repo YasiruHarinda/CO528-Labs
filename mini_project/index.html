@@ -1591,26 +1591,17 @@ function toggleLike(pid){
   p.liked = !p.liked;
   p.likes += p.liked ? 1 : -1;
 
-  // save open comment sections before redraw
-  const openSections = [];
-  document.querySelectorAll('[id^="comments-"]').forEach(el => {
-    if(el.style.display === 'block'){
-      openSections.push(el.id.replace('comments-', ''));
-    }
-  });
-
   // update backend
-  fetch(`${API_BASE}/api/posts/${pid}/like`, { method: 'POST' }).catch(() => {});
+  fetch(`${API_BASE}/api/posts/${pid}/like`, { method:'POST' }).catch(() => {});
 
-  drawFeed();
-
-  // restore open comment sections
-  setTimeout(() => {
-    openSections.forEach(id => {
-      const el = document.getElementById(`comments-${id}`);
-      if(el) el.style.display = 'block';
-    });
-  }, 30);
+  // ── Update only the like button, don't redraw whole feed ──
+  const likeBtn = document.querySelector(
+    `#post-${pid} [data-action="like"]`
+  );
+  if(likeBtn){
+    likeBtn.textContent = `${p.liked ? '❤️' : '🤍'} ${p.likes}`;
+    likeBtn.classList.toggle('liked', p.liked);
+  }
 }
 async function submitPost(){
   const txt = document.getElementById('postText').value.trim();
@@ -1888,6 +1879,7 @@ function submitComment(pid){
   });
   post.comments = post.commentList.length;
 
+  // save backend
   fetch(`${API_BASE}/api/posts/${pid}/comment`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1897,15 +1889,45 @@ function submitComment(pid){
     })
   }).catch(() => {});
 
-  drawFeed();
+  // ── DO NOT call drawFeed() — just update DOM directly ──
 
-  // reopen comment section and focus input
-  setTimeout(() => {
-    const section = document.getElementById(`comments-${pid}`);
-    if(section) section.style.display = 'block';
-    const newInput = document.getElementById(`commentInput-${pid}`);
-    if(newInput) newInput.focus();
-  }, 50);
+  // 1. Update comment count on button
+  const commentBtn = document.querySelector(
+    `#post-${pid} [data-action="comment"]`
+  );
+  if(commentBtn) commentBtn.textContent = `💬 ${post.comments}`;
+
+  // 2. Append new comment directly into comment section
+  const section = document.getElementById(`comments-${pid}`);
+  if(section){
+    const newComment = document.createElement('div');
+    newComment.style.cssText = `
+      display:flex;gap:8px;align-items:flex-start;
+      margin-top:8px;padding:8px;
+      background:rgba(255,255,255,0.03);border-radius:8px`;
+    newComment.innerHTML = `
+      <div class="avatar" 
+           style="width:26px;height:26px;font-size:9px;flex-shrink:0">
+        ${currentUser ? currentUser.avatar : '?'}
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600">
+          ${currentUser ? currentUser.name : 'You'}
+        </div>
+        <div style="font-size:12px;color:rgba(240,244,255,0.75);margin-top:2px">
+          ${commentText}
+        </div>
+      </div>`;
+
+    // insert before the input row (last child)
+    const inputRow = section.lastElementChild;
+    section.insertBefore(newComment, inputRow);
+
+    // 3. Clear input and keep section visible
+    input.value = '';
+    section.style.display = 'block';
+    input.focus();
+  }
 
   showToast('💬 Comment added!');
 }
