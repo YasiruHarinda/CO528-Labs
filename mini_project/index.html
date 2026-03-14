@@ -2426,6 +2426,12 @@ window._msgTo = function(idx){
   const m = allMembers.find(x => x.index === idx);
   if(m) startMessageTo(m.index, m.name);
 };
+
+function startMessageTo(memberId, memberName){
+  showPage('messages');
+  const convoId = [currentUser.uid, memberId].sort().join('_');
+  openConvo(convoId, memberId, memberName);
+}
 // ══════════════════════════════════════════
 //  EVENTS
 // ══════════════════════════════════════════
