@@ -836,30 +836,47 @@
   </div>
 
   <!-- ─── MESSAGING ─── -->
-  <div class="content" id="page-messaging">
-    <div class="chat-layout">
-      <div class="chat-list">
-        <div style="padding:12px 14px;border-bottom:1px solid var(--border)">
-          <input class="form-input" placeholder="Search conversations..." style="font-size:12px;padding:8px 12px"/>
-        </div>
-        <div id="chatList"></div>
-      </div>
-      <div class="chat-window">
-        <div class="chat-header" id="chatHeader">
-          <div class="avatar" style="width:36px;height:36px;font-size:14px">K</div>
-          <div>
-            <div style="font-size:14px;font-weight:500">Kamal Perera</div>
-            <div style="font-size:11px;color:var(--muted)"><span class="dot-online"></span> Online</div>
-          </div>
-        </div>
-        <div class="messages" id="messages"></div>
-        <div class="chat-input-row">
-          <input type="text" id="msgInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMsg()"/>
-          <button class="btn btn-primary btn-sm" onclick="sendMsg()">Send</button>
-        </div>
-      </div>
-    </div>
+<div id="page-messages" class="page" style="display:none">
+
+  <!-- INBOX VIEW -->
+  <div id="chatList">
+    <div class="section-title">Messages</div>
+    <!-- filled by renderChats() -->
   </div>
+
+  <!-- THREAD VIEW (hidden by default) -->
+  <div id="threadPanel" style="display:none;flex-direction:column;height:calc(100vh - 120px)">
+
+    <!-- Thread header -->
+    <div style="display:flex;align-items:center;gap:12px;
+                padding:14px;border-bottom:1px solid var(--border);
+                background:var(--card);border-radius:14px 14px 0 0;margin-bottom:4px">
+      <button onclick="backToInbox()"
+        style="background:none;border:none;color:var(--cyan);
+               font-size:20px;cursor:pointer;padding:0">←</button>
+      <div id="threadTitle" style="font-weight:700;font-size:16px"></div>
+    </div>
+
+    <!-- Messages -->
+    <div id="threadMessages"
+      style="flex:1;overflow-y:auto;padding:12px;
+             background:var(--bg);border:1px solid var(--border);
+             border-radius:0 0 0 0">
+    </div>
+
+    <!-- Input -->
+    <div style="display:flex;gap:8px;padding:12px;
+                background:var(--card);border:1px solid var(--border);
+                border-radius:0 0 14px 14px">
+      <input id="msgInput" type="text"
+        placeholder="Type a message..."
+        class="form-input" style="flex:1"
+        onkeydown="if(event.key==='Enter') sendMessage()"/>
+      <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+    </div>
+
+  </div>
+</div>
 
   <!-- ─── ANALYTICS ─── -->
   <div class="content" id="page-analytics">
@@ -2020,7 +2037,7 @@ function filterMembers(){
       </div>
       <button class="btn btn-outline btn-sm" 
         style="margin-top:10px;width:100%" 
-        onclick="showToast('💬 Message sent to ${m.name}!')">
+        onclick="startMessageTo('${m.index}','${m.name}')">
         Message
       </button>
     </div>`).join('');
@@ -2392,6 +2409,15 @@ async function applyJob(id, btn){
     showToast('❌ Failed to apply');
   }
 }
+
+function startMessageTo(memberId, memberName){
+  // Switch to messages tab
+  showPage('messages');
+
+  // Open conversation directly
+  const convoId = [currentUser.uid, memberId].sort().join('_');
+  openConvo(convoId, memberId, memberName);
+}
 // ══════════════════════════════════════════
 //  EVENTS
 // ══════════════════════════════════════════
@@ -2509,23 +2535,51 @@ function submitResearch(){
 // ══════════════════════════════════════════
 //  MESSAGING
 // ══════════════════════════════════════════
-function renderChats(){
-  document.getElementById('chatList').innerHTML=seedChats.map(c=>`
-    <div class="chat-item ${c.id===1?'active':''}" onclick="selectChat(${c.id},this,'${c.name}')">
-      <div class="avatar" style="width:36px;height:36px;font-size:12px;flex-shrink:0;position:relative">
-        ${c.avatar}
-        ${c.online?'<span style="position:absolute;bottom:0;right:0;width:9px;height:9px;background:var(--success);border-radius:50%;border:2px solid var(--navy)"></span>':''}
-      </div>
-      <div class="chat-info">
-        <div class="chat-name">${c.name}</div>
-        <div class="chat-preview">${c.last}</div>
-      </div>
-      <div>
-        <div class="chat-time">${c.time}</div>
-        ${c.unread?`<div style="text-align:right;margin-top:4px"><span class="nav-badge">${c.unread}</span></div>`:''}
-      </div>
-    </div>`).join('');
-  renderMessages();
+async function renderChats(){
+  if(!currentUser) return;
+
+  try {
+    const resp = await fetch(`${API_BASE}/api/messages?userId=${currentUser.uid}`);
+    const convos = await resp.json();
+
+    const box = document.getElementById('chatList');
+    if(!box) return;
+
+    if(convos.length === 0){
+      box.innerHTML = `
+        <div style="text-align:center;padding:60px 20px;color:var(--muted)">
+          <div style="font-size:40px;margin-bottom:12px">💬</div>
+          <div style="font-size:15px;margin-bottom:6px">No messages yet</div>
+          <div style="font-size:13px">Go to Members and click Message to start a conversation</div>
+        </div>`;
+      return;
+    }
+
+    box.innerHTML = convos.map(c => {
+      const otherId = c.participants.find(p => p !== currentUser.uid);
+      const otherName = c.names?.[otherId] || 'CE Member';
+      const otherAvatar = otherName.split(' ').map(w=>w[0]).join('').toUpperCase();
+      return `
+        <div class="chat-item" onclick="openConvo('${c.id}','${otherId}','${otherName}')"
+          style="display:flex;gap:12px;align-items:center;padding:14px;
+                 background:var(--card);border-radius:14px;margin-bottom:8px;
+                 border:1px solid var(--border);cursor:pointer">
+          <div class="avatar" style="width:42px;height:42px;flex-shrink:0">
+            ${otherAvatar}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:14px">${otherName}</div>
+            <div style="font-size:12px;color:var(--muted);
+                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              ${c.lastMessage || '...'}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+  } catch(e) {
+    console.log('Messages load failed:', e);
+  }
 }
 let chatMsgs=[...seedMessages];
 function renderMessages(){
@@ -2736,6 +2790,104 @@ function saveProfile(){
   document.getElementById('profileGithub').textContent=document.getElementById('epGit').value||'—';
   document.getElementById('profileLinkedIn').textContent=document.getElementById('epLinkedIn').value||'—';
   closeModal('editProfile');showToast('✅ Profile updated!');
+}
+
+let activeConvo = null; // {id, otherId, otherName}
+
+async function openConvo(convoId, otherId, otherName){
+  activeConvo = { id: convoId, otherId, otherName };
+
+  // Show thread panel
+  const chatList = document.getElementById('chatList');
+  const threadPanel = document.getElementById('threadPanel');
+
+  if(chatList) chatList.style.display = 'none';
+  if(threadPanel){
+    threadPanel.style.display = 'flex';
+    document.getElementById('threadTitle').textContent = otherName;
+  }
+
+  await loadThread(convoId);
+}
+
+async function loadThread(convoId){
+  try {
+    const resp = await fetch(`${API_BASE}/api/messages/${convoId}/thread`);
+    const msgs = await resp.json();
+
+    const box = document.getElementById('threadMessages');
+    if(!box) return;
+
+    box.innerHTML = msgs.map(m => {
+      const isMe = m.fromId === currentUser.uid;
+      return `
+        <div style="display:flex;justify-content:${isMe?'flex-end':'flex-start'};
+                    margin-bottom:8px">
+          <div style="max-width:70%;padding:10px 14px;
+                      background:${isMe?'var(--blue)':'var(--card)'};
+                      border-radius:${isMe?'18px 18px 4px 18px':'18px 18px 18px 4px'};
+                      font-size:13px;color:var(--white);
+                      border:1px solid ${isMe?'transparent':'var(--border)'}">
+            ${!isMe ? `<div style="font-size:10px;color:var(--muted);
+                                   margin-bottom:4px">${m.fromName}</div>` : ''}
+            ${m.text}
+          </div>
+        </div>`;
+    }).join('');
+
+    // Scroll to bottom
+    box.scrollTop = box.scrollHeight;
+
+  } catch(e) {
+    console.log('Thread load failed:', e);
+  }
+}
+
+async function sendMessage(){
+  const input = document.getElementById('msgInput');
+  if(!input || !input.value.trim() || !activeConvo) return;
+
+  const text = input.value.trim();
+  input.value = '';
+
+  // Show immediately in UI
+  const box = document.getElementById('threadMessages');
+  if(box){
+    box.innerHTML += `
+      <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+        <div style="max-width:70%;padding:10px 14px;
+                    background:var(--blue);border-radius:18px 18px 4px 18px;
+                    font-size:13px;color:var(--white)">
+          ${text}
+        </div>
+      </div>`;
+    box.scrollTop = box.scrollHeight;
+  }
+
+  // Save to backend
+  try {
+    await fetch(`${API_BASE}/api/messages/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fromId: currentUser.uid,
+        fromName: currentUser.name,
+        fromAvatar: currentUser.avatar,
+        toId: activeConvo.otherId,
+        toName: activeConvo.otherName,
+        text
+      })
+    });
+  } catch(e) {
+    showToast('❌ Failed to send message');
+  }
+}
+
+function backToInbox(){
+  activeConvo = null;
+  document.getElementById('chatList').style.display = 'block';
+  document.getElementById('threadPanel').style.display = 'none';
+  renderChats(); // refresh inbox
 }
 
 // ══════════════════════════════════════════
