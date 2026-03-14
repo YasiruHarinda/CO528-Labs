@@ -1605,15 +1605,23 @@ function postHTML(p){
 
     ${p.text ? `<div class="post-body">${p.text}</div>` : ''}
 
-    ${p.mediaUrl && p.mediaType && p.mediaType.startsWith('image/') ? `
-      <img src="${p.mediaUrl}"
-        style="width:100%;border-radius:10px;margin-top:10px;
-               max-height:300px;object-fit:cover"/>` : ''}
-
-    ${p.mediaUrl && p.mediaType && p.mediaType.startsWith('video/') ? `
-      <video src="${p.mediaUrl}" controls
-        style="width:100%;border-radius:10px;margin-top:10px;
-               max-height:300px"></video>` : ''}
+${p.mediaUrl ? (() => {
+  const isVideo = (p.mediaType && p.mediaType.startsWith('video/')) ||
+                  /\.(mp4|webm|mov)(\?|$)/i.test(p.mediaUrl);
+  const isImage = (p.mediaType && p.mediaType.startsWith('image/')) ||
+                  /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(p.mediaUrl) ||
+                  (!isVideo && p.mediaUrl.includes('storage.googleapis.com'));
+  if(isVideo) return `
+    <video src="${p.mediaUrl}" controls
+      style="width:100%;border-radius:10px;margin-top:10px;max-height:300px">
+    </video>`;
+  if(isImage) return `
+    <img src="${p.mediaUrl}"
+      style="width:100%;border-radius:10px;margin-top:10px;
+             max-height:300px;object-fit:cover"
+      onerror="this.style.display='none'"/>`;
+  return '';
+})() : ''}
 
     <div class="post-footer">
       <button class="react-btn ${p.liked ? 'liked' : ''}"
@@ -1862,29 +1870,26 @@ async function requestNotificationPermission(){
 async function subscribeUser(){
   try {
     const reg = await navigator.serviceWorker.ready;
-
-    // Convert VAPID key
-    const key = vapidPublicKey;
-    const applicationServerKey = urlBase64ToUint8Array(key);
+    const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
 
     const subscription = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey
     });
 
-    // Save to backend
+    // ✅ Send endpoint so backend can check for duplicates
     await fetch(`${API_BASE}/api/notifications/subscribe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         subscription,
         userId: currentUser?.index || 'anonymous',
-        userName: currentUser?.name || 'Unknown'
+        userName: currentUser?.name || 'Unknown',
+        endpoint: subscription.endpoint   // ← ADD THIS
       })
     });
 
     console.log('✅ Push subscription saved');
-
   } catch(e) {
     console.error('Subscribe failed:', e);
   }

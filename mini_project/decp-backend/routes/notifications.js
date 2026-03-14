@@ -10,18 +10,28 @@ webpush.setVapidDetails(
 );
 
 // POST /api/notifications/subscribe
-// Save user's push subscription token
 router.post('/subscribe', async (req, res) => {
   try {
-    const { subscription, userId, userName } = req.body;
+    const { subscription, userId, userName, endpoint } = req.body;
 
     if(!subscription || !subscription.endpoint){
       return res.status(400).json({ error: 'Invalid subscription' });
     }
 
-    // Save subscription to Firestore
+    // ✅ Check if this endpoint already exists — don't save duplicate
+    const existing = await db.collection('pushSubscriptions')
+      .where('endpoint', '==', subscription.endpoint)
+      .get();
+
+    if(!existing.empty){
+      console.log('⚠️ Subscription already exists, skipping');
+      return res.json({ success: true, duplicate: true });
+    }
+
+    // Save new subscription
     await db.collection('pushSubscriptions').add({
       subscription,
+      endpoint: subscription.endpoint,   // ← save endpoint for dedup check
       userId: userId || 'anonymous',
       userName: userName || 'Unknown',
       createdAt: admin.firestore.FieldValue.serverTimestamp()
