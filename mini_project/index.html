@@ -2047,11 +2047,13 @@ function filterMembers(){
         ${m.linkedin ? `<a href="${m.linkedin}" target="_blank" style="color:var(--cyan);font-size:11px;text-decoration:none"  onclick="event.stopPropagation()">LinkedIn</a>` : ''}
         ${m.profile  ? `<a href="${m.profile}"  target="_blank" style="color:var(--gold);font-size:11px;text-decoration:none"  onclick="event.stopPropagation()">Profile</a>`  : ''}
       </div>
-      <button class="btn btn-outline btn-sm"
-        style="margin-top:10px;width:100%"
-        onclick="startMessageTo('${m.index}','${m.name}')">
-        Message
-      </button>
+        <button class="btn btn-outline btn-sm"
+         style="margin-top:10px;width:100%"
+         data-id="${m.index}"
+         data-name="${m.name.replace(/'/g, '')}"
+         onclick="startMessageTo(this.dataset.id, this.dataset.name)">
+         Message
+        </button>
     </div>`).join('');
 
   document.querySelector('#page-members .section-title').textContent =
