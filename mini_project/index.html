@@ -2477,7 +2477,24 @@ function submitEvent(){
 // ══════════════════════════════════════════
 //  RESEARCH
 // ══════════════════════════════════════════
-function renderResearch(){research=[...seedResearch];drawResearch();}
+async function renderResearch(){
+  try {
+    const resp = await fetch(`${API_BASE}/api/research`);
+    const data = await resp.json();
+    research = data.length > 0 ? data.map(r => ({
+      id: r.id,
+      title: r.title || '',
+      field: r.field || '',
+      desc: r.desc || '',
+      lead: r.lead || 'Unknown',
+      open: r.open !== false,
+      members: r.members || 1
+    })) : [...seedResearch];
+  } catch(e) {
+    research = [...seedResearch];
+  }
+  drawResearch();
+}
 function drawResearch(){
   document.getElementById('researchList').innerHTML=research.map(r=>`
     <div class="research-card">
@@ -2495,15 +2512,67 @@ function drawResearch(){
       </div>
     </div>`).join('');
 }
-function joinResearch(id,btn){
-  const r=research.find(x=>x.id===id);
-  if(r){r.members++;btn.textContent='✓ Joined';btn.disabled=true;}
-  showToast('🔬 Joined research project!');
+async function joinResearch(id, btn){
+  if(btn){ btn.textContent = 'Joining...'; btn.disabled = true; }
+
+  try {
+    await fetch(`${API_BASE}/api/research/${id}/join`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: currentUser.name })
+    });
+
+    const r = research.find(x => x.id == id);
+    if(r) r.members++;
+    if(btn){ btn.textContent = '✓ Joined'; btn.style.color = 'var(--cyan)'; }
+    showToast('🔬 Joined research project!');
+
+  } catch(e) {
+    if(btn){ btn.textContent = 'Join Project'; btn.disabled = false; }
+    showToast('❌ Failed to join');
+  }
 }
-function submitResearch(){
-  const r={id:Date.now(),title:document.getElementById('rTitle').value,field:document.getElementById('rField').value,desc:document.getElementById('rDesc').value,lead:currentUser.name,open:document.getElementById('rOpen').value==='yes',members:1};
-  if(!r.title)return;
-  research.unshift(r);drawResearch();closeModal('addResearch');showToast('🔬 Research project created!');
+async function submitResearch(){
+  const title = document.getElementById('rTitle').value.trim();
+  const field = document.getElementById('rField').value.trim();
+  const desc  = document.getElementById('rDesc').value.trim();
+  const open  = document.getElementById('rOpen').value === 'yes';
+
+  if(!title){ showToast('❌ Please enter a project title!'); return; }
+
+  const btn = document.querySelector('#modal-addResearch .btn-primary');
+  if(btn){ btn.textContent = 'Creating...'; btn.disabled = true; }
+
+  try {
+    const resp = await fetch(`${API_BASE}/api/research`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title, field, desc, open,
+        lead: currentUser.name,
+        members: 1
+      })
+    });
+
+    const saved = await resp.json();
+
+    // Add to local list immediately
+    research.unshift({
+      id: saved.id,
+      title, field, desc, open,
+      lead: currentUser.name,
+      members: 1
+    });
+
+    drawResearch();
+    closeModal('addResearch');
+    showToast('🔬 Research project created!');
+
+  } catch(e) {
+    showToast('❌ Failed to save. Try again.');
+  } finally {
+    if(btn){ btn.textContent = 'Create Project'; btn.disabled = false; }
+  }
 }
 
 // ══════════════════════════════════════════
