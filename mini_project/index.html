@@ -2428,7 +2428,7 @@ window._msgTo = function(idx){
 };
 
 function startMessageTo(memberId, memberName){
-  showPage('messages');
+  showPage('messaging');
   const convoId = [currentUser.uid, memberId].sort().join('_');
   openConvo(convoId, memberId, memberName);
 }
