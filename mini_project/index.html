@@ -1159,6 +1159,7 @@ async function doLogin(){
       index: data.user.indexNo,
       role: data.user.role,
       batch: data.user.batch,
+      uid: data.user.uid, 
       avatar: data.user.name.split(' ').map(w=>w[0]).join('').toUpperCase()
     };
 
@@ -1220,6 +1221,7 @@ async function doRegister(){
       index: idx,
       role: role,
       batch: batch,
+      uid: data.user.uid
       avatar: (first[0] + last[0]).toUpperCase()
     };
 
