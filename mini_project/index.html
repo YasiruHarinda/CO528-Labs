@@ -2048,12 +2048,10 @@ function filterMembers(){
         ${m.profile  ? `<a href="${m.profile}"  target="_blank" style="color:var(--gold);font-size:11px;text-decoration:none"  onclick="event.stopPropagation()">Profile</a>`  : ''}
       </div>
         <button class="btn btn-outline btn-sm"
-         style="margin-top:10px;width:100%"
-         data-id="${m.index}"
-         data-name="${m.name.replace(/'/g, '')}"
-         onclick="startMessageTo(this.dataset.id, this.dataset.name)">
-         Message
-        </button>
+  style="margin-top:10px;width:100%"
+  onclick="window._msgTo('${m.index}')">
+  Message
+</button>
     </div>`).join('');
 
   document.querySelector('#page-members .section-title').textContent =
@@ -2100,7 +2098,7 @@ function submitComment(pid){
     })
   }).catch(() => {});
 
-  // ── DO NOT call drawFeed() — just update DOM directly ──
+  
 
   // 1. Update comment count on button
   const commentBtn = document.querySelector(
@@ -2424,6 +2422,10 @@ async function applyJob(id, btn){
     showToast('❌ Failed to apply');
   }
 }
+window._msgTo = function(idx){
+  const m = allMembers.find(x => x.index === idx);
+  if(m) startMessageTo(m.index, m.name);
+};
 // ══════════════════════════════════════════
 //  EVENTS
 // ══════════════════════════════════════════
