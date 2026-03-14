@@ -2438,8 +2438,10 @@ window._msgTo = function(idx){
 
 function startMessageTo(memberId, memberName){
   showPage('messaging');
-  const convoId = [currentUser.uid, memberId].sort().join('_');
-  openConvo(convoId, memberId, memberName);
+  // Clean memberId — remove slashes so Firestore doc ID is valid
+  const cleanId = memberId.replace(/\//g, '-');
+  const convoId = [currentUser.uid, cleanId].sort().join('_');
+  openConvo(convoId, cleanId, memberName);
 }
 // ══════════════════════════════════════════
 //  EVENTS
@@ -2747,10 +2749,10 @@ async function sendMessage(){
         text
       })
     });
-  } catch(e) {
-    showToast('❌ Failed to send');
+   }  catch(e) {
+    console.error('Send failed:', e);
+    showToast('❌ Failed to send: ' + e.message);
   }
-}
 
 function backToInbox(){
   activeConvo = null;

@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const { db, admin } = require('../firebase');
 
+
 // GET /api/messages?userId=xxx
 router.get('/', async (req, res) => {
   const { userId } = req.query;
@@ -26,6 +27,9 @@ router.get('/', async (req, res) => {
 
 // GET /api/messages/:convoId/thread
 router.get('/:convoId/thread', async (req, res) => {
+  const cleanToId = toId.replace(/\//g, '-');
+const cleanFromId = fromId.replace(/\//g, '-');
+const convoId = [cleanFromId, cleanToId].sort().join('_');
   try {
     const snap = await db.collection('messages')
       .doc(req.params.convoId)
