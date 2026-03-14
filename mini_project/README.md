@@ -121,10 +121,9 @@ VAPID_EMAIL=mailto:your@email.com
 
 | Index No. | Name | Role |
 |-----------|------|------|
-| E/20/089 | Edirimanna Y.H. | Enterprise Architect |
+| E/20/089 | Edirimanna Y.H. | Enterprise Architect, Security & DevOps Architect |
 | E/20/361 | Senadheera Y.H. | Solution Architect |
 | E/20/366 | Senevirathna A.P.B.P | Application Architect |
-| E/20/ | Member 4 | Security & DevOps Architect |
 
 ---
 
