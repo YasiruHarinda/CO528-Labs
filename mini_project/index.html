@@ -775,7 +775,12 @@
   <div class="content" id="page-members">
     <div class="section-header mb-18">
       <div class="section-title">Department Members</div>
+      <input class="form-input" id="memberSearch"
+          placeholder="🔍 Search by name, index number or batch..."
+          style="margin-bottom:12px;width:100%"
+          oninput="filterMembers()"/>
       <div style="display:flex;gap:8px">
+        
         <select class="form-input" id="filterBatch" 
           style="width:auto;padding:6px 12px;font-size:13px" 
           onchange="filterMembers()">
@@ -1281,6 +1286,81 @@ function updateUserUI(){
      <span class="tag tag-green">Active</span>`;
 }
 
+async function loadMembers(){
+  const loadEl = document.getElementById('membersLoading');
+  const gridEl = document.getElementById('membersGrid');
+
+  // All batches from newest to oldest
+  const batches = ['E23','E22','E21','E20','E19','E18','E17','E16','E15','E14'];
+
+  try {
+    // Step 1 — fetch all batch indexes in parallel
+    const batchResults = await Promise.all(
+      batches.map(b =>
+        fetch(`https://api.ce.pdn.ac.lk/people/v1/students/${b}/`)
+          .then(r => r.json())
+          .then(data => ({ batch: b, students: data }))
+          .catch(() => ({ batch: b, students: {} }))
+      )
+    );
+
+    // Step 2 — collect ALL student URLs — no slice limit
+    let allUrls = [];
+    batchResults.forEach(({ batch, students }) => {
+      const urls = Object.entries(students)
+        .map(([indexNo, val]) => ({ indexNo, url: val.url, batch }));
+      allUrls = [...allUrls, ...urls];
+    });
+
+    // Show loading progress
+    if(loadEl) loadEl.textContent = `Loading ${allUrls.length} students...`;
+
+    // Step 3 — fetch in chunks of 20 to avoid overwhelming the API
+    const chunkSize = 20;
+    let allDetails = [];
+    for(let i = 0; i < allUrls.length; i += chunkSize){
+      const chunk = allUrls.slice(i, i + chunkSize);
+      const results = await Promise.all(
+        chunk.map(({ indexNo, url, batch }) =>
+          fetch(url)
+            .then(r => r.json())
+            .then(data => ({
+              name: data.name_with_initials || data.full_name || indexNo,
+              index: data.eNumber || indexNo,
+              batch: data.batch || batch,
+              email: data.emails?.faculty?.name
+                ? `${data.emails.faculty.name}@${data.emails.faculty.domain}`
+                : '',
+              image: data.profile_image || null,
+              github: data.urls?.github || '',
+              linkedin: data.urls?.linkedin || '',
+              profile: data.profile_page || '',
+              role: 'student',
+              avatar: (data.name_with_initials || indexNo)
+                .split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+            }))
+            .catch(() => null)
+        )
+      );
+      allDetails = [...allDetails, ...results.filter(s => s !== null)];
+
+      // Update progress
+      if(loadEl) loadEl.textContent = `Loaded ${allDetails.length} of ${allUrls.length} students...`;
+    }
+
+    allMembers = allDetails;
+    console.log(`✅ Loaded ${allMembers.length} real members from CE API`);
+
+  } catch(e) {
+    console.log('CE API failed, using seed data');
+    allMembers = generateSeedMembers();
+  }
+
+  if(loadEl) loadEl.style.display = 'none';
+  if(gridEl) gridEl.style.display = 'grid';
+  filterMembers();
+  renderBatchBars();
+}
 // ══════════════════════════════════════════
 //  NAVIGATION
 // ══════════════════════════════════════════
@@ -1914,72 +1994,7 @@ const batchInfo={
   E22:{count:100},E23:{count:100},E10:{count:6},E11:{count:9},E12:{count:9},E13:{count:6}
 };
 
-async function loadMembers(){
-  const loadEl = document.getElementById('membersLoading');
-  const gridEl = document.getElementById('membersGrid');
 
-  // Batches to load — recent ones first
-  const batches = ['E20', 'E21', 'E22', 'E23', 'E19', 'E18', 'E17'];
-
-  try {
-    // Step 1 — fetch all batch indexes in parallel
-    const batchResults = await Promise.all(
-      batches.map(b =>
-        fetch(`https://api.ce.pdn.ac.lk/people/v1/students/${b}/`)
-          .then(r => r.json())
-          .then(data => ({ batch: b, students: data }))
-          .catch(() => ({ batch: b, students: {} }))
-      )
-    );
-
-    // Step 2 — collect all student URLs (limit per batch to avoid too many requests)
-    let allUrls = [];
-    batchResults.forEach(({ batch, students }) => {
-      const urls = Object.entries(students)
-        .slice(0, 15) // max 15 per batch for speed
-        .map(([indexNo, val]) => ({ indexNo, url: val.url, batch }));
-      allUrls = [...allUrls, ...urls];
-    });
-
-    // Step 3 — fetch individual student details in parallel
-    const studentDetails = await Promise.all(
-      allUrls.map(({ indexNo, url, batch }) =>
-        fetch(url)
-          .then(r => r.json())
-          .then(data => ({
-            name: data.name_with_initials || data.full_name || indexNo,
-            index: data.eNumber || indexNo,
-            batch: data.batch || batch,
-            email: data.emails?.faculty?.name
-              ? `${data.emails.faculty.name}@${data.emails.faculty.domain}`
-              : '',
-            image: data.profile_image || null,
-            github: data.urls?.github || '',
-            linkedin: data.urls?.linkedin || '',
-            profile: data.profile_page || '',
-            role: 'student',
-            avatar: (data.name_with_initials || indexNo)
-              .split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
-          }))
-          .catch(() => null)
-      )
-    );
-
-    // Step 4 — filter out failed requests
-    allMembers = studentDetails.filter(s => s !== null);
-
-    console.log(`✅ Loaded ${allMembers.length} real members from CE API`);
-
-  } catch(e) {
-    console.log('CE API failed, using seed data');
-    allMembers = generateSeedMembers();
-  }
-
-  loadEl.style.display = 'none';
-  gridEl.style.display = 'grid';
-  filterMembers();
-  renderBatchBars();
-}
 function generateSeedMembers(){
   const names=['Kamal Perera','Nimesha Weerasinghe','Thisara Bandara','Amaya Silva','Dilan Jayawardena','Sahan Rajapaksa','Gayani Fernando','Nuwan Dissanayake','Dilini Mendis','Ruwan Kumara','Tharushi Senanayake','Kasun Wickramasinghe','Sachini Rathnayake','Pradeep Alwis','Malsha Gunawardena','Chathura Herath','Sanduni Pathirana','Ishan Ratnasiri','Dilshan Liyanage','Hiruni Nanayakkara'];
   return names.map((n,i)=>({
@@ -1991,22 +2006,33 @@ function generateSeedMembers(){
   }));
 }
 function filterMembers(){
-  const batch = document.getElementById('filterBatch').value;
-  const role = document.getElementById('filterRole').value;
-  let filtered = allMembers;
-  if(batch) filtered = filtered.filter(m => m.batch === batch);
-  if(role) filtered = filtered.filter(m => m.role === role);
+  const batch  = document.getElementById('filterBatch').value;
+  const role   = document.getElementById('filterRole').value;
+  const search = (document.getElementById('memberSearch')?.value || '').toLowerCase().trim();
 
-  document.getElementById('membersGrid').innerHTML = filtered.map(m => `
+  let filtered = allMembers;
+  if(batch)  filtered = filtered.filter(m => m.batch === batch);
+  if(role)   filtered = filtered.filter(m => m.role  === role);
+  if(search) filtered = filtered.filter(m =>
+    m.name.toLowerCase().includes(search)  ||
+    m.index.toLowerCase().includes(search) ||
+    m.batch.toLowerCase().includes(search) ||
+    m.email.toLowerCase().includes(search)
+  );
+
+  document.getElementById('membersGrid').innerHTML = filtered.length === 0
+    ? `<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)">
+         <div style="font-size:40px;margin-bottom:12px">🔍</div>
+         <div style="font-size:15px">No members found for "${search}"</div>
+       </div>`
+    : filtered.map(m => `
     <div class="member-card fade-up">
       ${m.image
-        ? `<img src="${m.image}" 
+        ? `<img src="${m.image}"
              style="width:54px;height:54px;border-radius:50%;
                     object-fit:cover;margin:0 auto 10px;display:block;
                     border:2px solid var(--blue)"
-             onerror="this.style.display='none';
-                      this.nextElementSibling.style.display='flex'"
-           />
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
            <div class="member-avatar" style="display:none">${m.avatar}</div>`
         : `<div class="member-avatar">${m.avatar}</div>`
       }
@@ -2017,25 +2043,18 @@ function filterMembers(){
         <span class="tag tag-green">Student</span>
       </div>
       <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
-        ${m.github ? `<a href="${m.github}" target="_blank" 
-          style="color:var(--muted);font-size:11px;text-decoration:none"
-          onclick="event.stopPropagation()">GitHub</a>` : ''}
-        ${m.linkedin ? `<a href="${m.linkedin}" target="_blank"
-          style="color:var(--cyan);font-size:11px;text-decoration:none"
-          onclick="event.stopPropagation()">LinkedIn</a>` : ''}
-        ${m.profile ? `<a href="${m.profile}" target="_blank"
-          style="color:var(--gold);font-size:11px;text-decoration:none"
-          onclick="event.stopPropagation()">Profile</a>` : ''}
+        ${m.github   ? `<a href="${m.github}"   target="_blank" style="color:var(--muted);font-size:11px;text-decoration:none" onclick="event.stopPropagation()">GitHub</a>`   : ''}
+        ${m.linkedin ? `<a href="${m.linkedin}" target="_blank" style="color:var(--cyan);font-size:11px;text-decoration:none"  onclick="event.stopPropagation()">LinkedIn</a>` : ''}
+        ${m.profile  ? `<a href="${m.profile}"  target="_blank" style="color:var(--gold);font-size:11px;text-decoration:none"  onclick="event.stopPropagation()">Profile</a>`  : ''}
       </div>
-      <button class="btn btn-outline btn-sm" 
-        style="margin-top:10px;width:100%" 
-        onclick="showToast('💬 Message sent to ${m.name}!')">
+      <button class="btn btn-outline btn-sm"
+        style="margin-top:10px;width:100%"
+        onclick="startMessageTo('${m.index}','${m.name}')">
         Message
       </button>
     </div>`).join('');
 
-  // Show count
-  document.querySelector('#page-members .section-title').textContent = 
+  document.querySelector('#page-members .section-title').textContent =
     `Department Members (${filtered.length})`;
 }
 
@@ -2139,6 +2158,8 @@ function sharePost(pid){
       .catch(() => showToast('🔗 ' + window.location.href));
   }
 }
+
+
 // ══════════════════════════════════════════
 //  JOBS
 // ══════════════════════════════════════════
