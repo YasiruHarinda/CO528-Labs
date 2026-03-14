@@ -16,6 +16,7 @@
 
 A platform for current students and alumni of the CE department to connect, share posts, apply for jobs, collaborate on research, and stay up to date with department events.
 
+![dashboard](image.png)
 ---
 
 ## Features
