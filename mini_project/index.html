@@ -2829,9 +2829,9 @@ async function renderAnalytics(){
     // ── ACTIVE USERS — registered users by batch ──
     const userBatches = {};
     // Count from CE API batch list
-    const batchKeys = Object.keys(members);
+    const batchKeys = ['E23','E22','E21','E20','E19','E18','E17'];
     const batchCounts = await Promise.all(
-      batchKeys.slice(0,7).map(b =>
+    batchKeys.map(b =>
         fetch(`https://api.ce.pdn.ac.lk/people/v1/students/${b}/`)
           .then(r=>r.json())
           .then(data => ({ batch: b, count: Object.keys(data).length }))
